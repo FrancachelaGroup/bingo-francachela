@@ -369,6 +369,29 @@
     text-shadow:0 0 30px var(--yellow); margin-bottom:26px;
   }
 
+  /* ---------- Revelación de balota a pantalla completa (Modo TV) ---------- */
+  .tv-reveal{
+    position:fixed;inset:0;z-index:400;
+    background:radial-gradient(circle at 50% 45%, #2a1848, #05010c 75%);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .tv-reveal-letter{
+    font-family:'Baloo 2';font-weight:800;color:var(--cyan);
+    font-size:6vw;letter-spacing:1vw;
+    text-shadow:0 0 30px var(--cyan);
+  }
+  .tv-reveal-num{
+    font-family:'Baloo 2';font-weight:800;color:#fff;
+    font-size:34vw;line-height:1;
+    text-shadow:0 0 60px var(--pink), 0 0 120px var(--purple);
+    animation:tvRevealPop .5s cubic-bezier(.2,1.4,.4,1);
+  }
+  @keyframes tvRevealPop{
+    0%{transform:scale(.3);opacity:0;}
+    70%{transform:scale(1.12);opacity:1;}
+    100%{transform:scale(1);opacity:1;}
+  }
+
   ::-webkit-scrollbar{width:8px;height:8px;}
   ::-webkit-scrollbar-thumb{background:var(--purple);border-radius:4px;}
 
@@ -538,6 +561,12 @@
     <div class="sub">Muéstrale este número al organizador</div>
     <div class="bignum" style="font-size:7rem;" id="singCardId">#000</div>
     <button class="neon-btn big pink" id="btnCloseSing">Cerrar</button>
+  </div>
+
+  <!-- ============ REVELACIÓN DE BALOTA A PANTALLA COMPLETA (MODO TV) ============ -->
+  <div class="tv-reveal" id="tvRevealOverlay" hidden>
+    <div class="tv-reveal-letter" id="tvRevealLetter">B</div>
+    <div class="tv-reveal-num" id="tvRevealNum">7</div>
   </div>
 
   <!-- ============ PRINT AREA (paper cards) ============ -->
@@ -921,6 +950,42 @@
     }
   }
 
+  /* ======================================================
+     REVELACIÓN DE BALOTA A PANTALLA COMPLETA (MODO TV)
+     Al extraer, si el Modo TV está activo, la pantalla
+     muestra únicamente la balota; el locutor la anuncia
+     3 veces con 3 segundos de intervalo y luego vuelve
+     automáticamente al tablero.
+  ====================================================== */
+  const tvRevealOverlay = document.getElementById('tvRevealOverlay');
+  const tvRevealLetterEl = document.getElementById('tvRevealLetter');
+  const tvRevealNumEl = document.getElementById('tvRevealNum');
+  const REVEAL_REPEATS = 3;
+  const REVEAL_INTERVAL_MS = 3000;
+
+  function revealBallFullscreen(n, onDone){
+    const inTv = document.getElementById('hostView').classList.contains('tv-mode');
+    if(!inTv){
+      announce(n);
+      onDone();
+      return;
+    }
+    tvRevealLetterEl.textContent = letterForNumber(n);
+    tvRevealNumEl.textContent = n;
+    tvRevealOverlay.hidden = false;
+    tvRevealNumEl.style.animation = 'none';
+    void tvRevealNumEl.offsetWidth; // fuerza reflow para reiniciar la animación
+    tvRevealNumEl.style.animation = '';
+
+    for(let i=0;i<REVEAL_REPEATS;i++){
+      setTimeout(()=>announce(n), i * REVEAL_INTERVAL_MS);
+    }
+    setTimeout(()=>{
+      tvRevealOverlay.hidden = true;
+      onDone();
+    }, (REVEAL_REPEATS - 1) * REVEAL_INTERVAL_MS + 2000);
+  }
+
   let drawing = false;
   function drawBall(){
     if(drawing) return;
@@ -954,10 +1019,11 @@
         tvBallEl.classList.remove('flicker');
         refreshHistoryAndCount();
         refreshBoard();
-        announce(n);
-        drawing = false;
-        btnDraw.disabled = false;
-        btnTvDraw.disabled = false;
+        revealBallFullscreen(n, ()=>{
+          drawing = false;
+          btnDraw.disabled = false;
+          btnTvDraw.disabled = false;
+        });
       }
     }, 60);
   }
