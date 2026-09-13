@@ -93,28 +93,105 @@
   @media (max-width:1100px){ .grid-main{grid-template-columns:1fr;} }
 
   /* ---------- Modo TV (pantalla de audiencia) ---------- */
-  #hostView.tv-mode #organizerActions,
-  #hostView.tv-mode #modePanelWrap,
-  #hostView.tv-mode #verifyPanelWrap{
-    display:none;
-  }
-  #hostView.tv-mode .grid-main{
-    grid-template-columns:1fr;
-    max-width:1200px;
+  #hostView.tv-mode #organizerActions{ display:none; }
+  #hostView.tv-mode #gridMain{ display:none; }
+  #hostView:not(.tv-mode) #tvStage{ display:none; }
+
+  .tv-stage{
+    display:flex;
+    gap:22px;
+    align-items:flex-start;
+    max-width:1500px;
     margin:0 auto;
   }
-  #hostView.tv-mode .last-ball{
-    width:230px;height:230px;
+  @media (max-width:1000px){ .tv-stage{flex-direction:column;} }
+
+  .tv-board-wrap{
+    flex:1 1 auto;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:20px;
   }
-  #hostView.tv-mode .last-ball .letter{font-size:2rem;}
-  #hostView.tv-mode .last-ball .num{font-size:4.5rem;}
-  #hostView.tv-mode .draw-actions .neon-btn.big{font-size:1.4rem;padding:20px 32px;}
-  #hostView.tv-mode .remaining-count{font-size:1.1rem;}
-  #hostView.tv-mode .history{max-height:none;}
-  #hostView.tv-mode .chip{font-size:1.1rem;padding:8px 12px;min-width:44px;}
-  #hostView.tv-mode #boardPanelWrap h2{font-size:1.5rem;}
-  #hostView.tv-mode .board-col-head{font-size:1.8rem;padding:10px 0;}
-  #hostView.tv-mode .ball-cell{font-size:1.3rem;}
+  .tv-row{
+    display:grid;
+    grid-template-columns:64px repeat(15,1fr);
+    gap:6px;
+  }
+  .tv-letter{
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Baloo 2';font-weight:800;font-size:1.6rem;
+    border-radius:10px;background:var(--panel-2);
+  }
+  .tv-letter.b{color:var(--pink);text-shadow:0 0 10px var(--pink);}
+  .tv-letter.i{color:var(--cyan);text-shadow:0 0 10px var(--cyan);}
+  .tv-letter.n{color:var(--yellow);text-shadow:0 0 10px var(--yellow);}
+  .tv-letter.g{color:#c98bff;text-shadow:0 0 10px var(--purple);}
+  .tv-letter.o{color:var(--green);text-shadow:0 0 10px var(--green);}
+  .tv-cell{
+    aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
+    border-radius:8px;background:#150a26;border:1px solid var(--border);
+    font-weight:700;font-size:1.05rem;color:var(--text-dim);transition:all .25s ease;
+  }
+  .tv-cell.drawn{
+    background:linear-gradient(140deg,var(--pink),var(--purple));
+    color:#fff;border-color:transparent;
+    box-shadow:0 0 14px rgba(255,46,136,.6);
+    transform:scale(1.05);
+  }
+  .tv-cell.last{outline:3px solid var(--yellow);box-shadow:0 0 20px var(--yellow);}
+
+  .tv-side{
+    flex:0 0 260px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .tv-tile{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);border-radius:16px;
+    padding:12px;text-align:center;
+  }
+  .tv-tile-label{color:var(--text-dim);font-size:.8rem;letter-spacing:2px;text-transform:uppercase;}
+  .tv-tile-value{font-family:'Baloo 2';font-size:2rem;font-weight:800;color:var(--cyan);}
+
+  .tv-ball{
+    background:radial-gradient(circle at 35% 30%, #2a1848, #12061f 70%);
+    border:4px solid var(--yellow);
+    box-shadow:0 0 40px rgba(255,230,0,.45), inset 0 0 25px rgba(255,230,0,.15);
+    border-radius:20px;
+    padding:18px 10px;
+    text-align:center;
+  }
+  .tv-ball-letter{font-family:'Baloo 2';font-size:1.6rem;color:var(--cyan);letter-spacing:2px;}
+  .tv-ball-num{font-family:'Baloo 2';font-size:4.5rem;font-weight:800;line-height:1;color:#fff;text-shadow:0 0 18px var(--pink);}
+  .tv-ball-caption{color:var(--text-dim);font-size:.8rem;letter-spacing:3px;margin-top:6px;}
+  .tv-ball.flicker{animation:pulse .12s ease infinite alternate;}
+
+  .tv-remaining{text-align:center;color:var(--text-dim);font-size:.95rem;}
+
+  .tv-pattern-box{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);border-radius:16px;
+    padding:16px;text-align:center;
+  }
+  .tv-pattern-grid{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
+    max-width:170px;margin:0 auto 12px;
+  }
+  .tv-pattern-cell{
+    aspect-ratio:1/1;border-radius:5px;background:var(--panel-2);border:1px solid var(--border);
+  }
+  .tv-pattern-cell.on{
+    background:linear-gradient(140deg,var(--pink),var(--purple));
+    border-color:transparent;box-shadow:0 0 8px rgba(255,46,136,.6);
+  }
+  .tv-pattern-label{
+    font-family:'Baloo 2';font-weight:800;font-size:1.1rem;color:var(--cyan);
+  }
 
   .panel{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
@@ -389,6 +466,28 @@
         </div>
       </div>
     </div>
+
+    <!-- ============ TV STAGE (pantalla de audiencia) ============ -->
+    <div class="tv-stage" id="tvStage">
+      <div class="tv-board-wrap" id="tvBoardWrap"></div>
+      <div class="tv-side">
+        <div class="tv-tile">
+          <div class="tv-tile-label">Partida</div>
+          <div class="tv-tile-value" id="tvGameNum">1</div>
+        </div>
+        <div class="tv-ball" id="tvBall">
+          <div class="tv-ball-letter" id="tvBallLetter">&nbsp;</div>
+          <div class="tv-ball-num" id="tvBallNum">0</div>
+          <div class="tv-ball-caption">BALOTA</div>
+        </div>
+        <button class="neon-btn big pink block" id="btnTvDraw">🎙️ EXTRAER BALOTA</button>
+        <div class="tv-remaining" id="tvRemaining">75 restantes</div>
+        <div class="tv-pattern-box">
+          <div class="tv-pattern-grid" id="tvPatternGrid"></div>
+          <div class="tv-pattern-label" id="tvPatternLabel">Cartón Lleno</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ============ PLAYER VIEW ============ -->
@@ -598,12 +697,14 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         seed: state.seed,
         drawn: state.drawn,
-        mode: state.mode
+        mode: state.mode,
+        gameNum: state.gameNum
       }));
     }catch(e){/* almacenamiento no disponible, se continua sin persistencia */}
   }
 
-  let state = loadState() || { seed: randomSeed(), drawn: [], mode: 'lleno' };
+  let state = loadState() || { seed: randomSeed(), drawn: [], mode: 'lleno', gameNum: 1 };
+  if(!state.gameNum) state.gameNum = 1;
 
   /* ======================================================
      VOZ (Web Speech API)
@@ -664,6 +765,89 @@
       cell.classList.toggle('drawn', drawnSet.has(n));
       cell.classList.toggle('last', n === last);
     });
+    refreshTvBoard();
+  }
+
+  /* ======================================================
+     RENDER: TABLERO HORIZONTAL DEL MODO TV
+  ====================================================== */
+  const tvBoardWrapEl = document.getElementById('tvBoardWrap');
+  function buildTvBoard(){
+    tvBoardWrapEl.innerHTML = '';
+    LETTERS.forEach((letter,ci)=>{
+      const row = document.createElement('div');
+      row.className = 'tv-row';
+      const head = document.createElement('div');
+      head.className = 'tv-letter ' + CLASS_BY_LETTER[letter];
+      head.textContent = letter;
+      row.appendChild(head);
+      const [min,max] = RANGES[ci];
+      for(let n=min;n<=max;n++){
+        const cell = document.createElement('div');
+        cell.className = 'tv-cell';
+        cell.dataset.n = n;
+        cell.textContent = n;
+        row.appendChild(cell);
+      }
+      tvBoardWrapEl.appendChild(row);
+    });
+  }
+  function refreshTvBoard(){
+    const drawnSet = new Set(state.drawn);
+    const last = state.drawn[state.drawn.length-1];
+    tvBoardWrapEl.querySelectorAll('.tv-cell').forEach(cell=>{
+      const n = Number(cell.dataset.n);
+      cell.classList.toggle('drawn', drawnSet.has(n));
+      cell.classList.toggle('last', n === last);
+    });
+  }
+
+  /* ======================================================
+     RENDER: DIAGRAMA DEL PATRÓN (MODO TV)
+  ====================================================== */
+  function canonicalPatternCells(modeId){
+    const on = new Set();
+    const add = (r,c)=>on.add(r+'-'+c);
+    switch(modeId){
+      case 'lleno':
+        for(let r=0;r<5;r++) for(let c=0;c<5;c++) add(r,c);
+        break;
+      case 'linea':
+        for(let c=0;c<5;c++) add(2,c);
+        break;
+      case 'x':
+        for(let i=0;i<5;i++){ add(i,i); add(i,4-i); }
+        break;
+      case 'cruz':
+        for(let c=0;c<5;c++) add(2,c);
+        for(let r=0;r<5;r++) add(r,2);
+        break;
+      case 'esquinas':
+        add(0,0); add(0,4); add(4,0); add(4,4);
+        break;
+      case 'bloque6':
+        for(let r=0;r<2;r++) for(let c=2;c<5;c++) add(r,c);
+        break;
+      case 'bloque9':
+        for(let r=0;r<3;r++) for(let c=2;c<5;c++) add(r,c);
+        break;
+    }
+    return on;
+  }
+  const tvPatternGridEl = document.getElementById('tvPatternGrid');
+  const tvPatternLabelEl = document.getElementById('tvPatternLabel');
+  function renderPatternPreview(modeId){
+    const mode = modeById(modeId);
+    const on = canonicalPatternCells(modeId);
+    tvPatternGridEl.innerHTML = '';
+    for(let r=0;r<5;r++){
+      for(let c=0;c<5;c++){
+        const cell = document.createElement('div');
+        cell.className = 'tv-pattern-cell' + (on.has(r+'-'+c) ? ' on' : '');
+        tvPatternGridEl.appendChild(cell);
+      }
+    }
+    tvPatternLabelEl.textContent = mode.name;
   }
 
   /* ======================================================
@@ -681,6 +865,7 @@
         state.mode = m.id;
         saveState();
         buildModes();
+        renderPatternPreview(state.mode);
       });
       modeListEl.appendChild(btn);
     });
@@ -695,6 +880,11 @@
   const remainingCountEl = document.getElementById('remainingCount');
   const historyEl = document.getElementById('history');
   const btnDraw = document.getElementById('btnDraw');
+  const tvBallEl = document.getElementById('tvBall');
+  const tvBallLetterEl = document.getElementById('tvBallLetter');
+  const tvBallNumEl = document.getElementById('tvBallNum');
+  const tvRemainingEl = document.getElementById('tvRemaining');
+  const btnTvDraw = document.getElementById('btnTvDraw');
 
   function remainingPool(){
     const drawnSet = new Set(state.drawn);
@@ -704,7 +894,9 @@
   }
 
   function refreshHistoryAndCount(){
-    remainingCountEl.textContent = remainingPool().length + ' balotas restantes de 75';
+    const remaining = remainingPool().length;
+    remainingCountEl.textContent = remaining + ' balotas restantes de 75';
+    tvRemainingEl.textContent = remaining + ' restantes';
     historyEl.innerHTML = '';
     for(let i=state.drawn.length-1;i>=0;i--){
       const n = state.drawn[i];
@@ -718,10 +910,14 @@
       lastBallEl.classList.remove('empty');
       lastBallLetterEl.textContent = letterForNumber(last);
       lastBallNumEl.textContent = last;
+      tvBallLetterEl.textContent = letterForNumber(last);
+      tvBallNumEl.textContent = last;
     }else{
       lastBallEl.classList.add('empty');
       lastBallLetterEl.textContent = '';
       lastBallNumEl.textContent = '?';
+      tvBallLetterEl.textContent = '';
+      tvBallNumEl.textContent = '0';
     }
   }
 
@@ -735,14 +931,18 @@
     }
     drawing = true;
     btnDraw.disabled = true;
+    btnTvDraw.disabled = true;
     lastBallEl.classList.remove('empty');
     lastBallEl.classList.add('flicker');
+    tvBallEl.classList.add('flicker');
     let ticks = 0;
     const maxTicks = 14;
     const flickerTimer = setInterval(()=>{
       const r = pool[Math.floor(Math.random()*pool.length)];
       lastBallLetterEl.textContent = letterForNumber(r);
       lastBallNumEl.textContent = r;
+      tvBallLetterEl.textContent = letterForNumber(r);
+      tvBallNumEl.textContent = r;
       ticks++;
       if(ticks >= maxTicks){
         clearInterval(flickerTimer);
@@ -751,15 +951,18 @@
         state.drawn.push(n);
         saveState();
         lastBallEl.classList.remove('flicker');
+        tvBallEl.classList.remove('flicker');
         refreshHistoryAndCount();
         refreshBoard();
         announce(n);
         drawing = false;
         btnDraw.disabled = false;
+        btnTvDraw.disabled = false;
       }
     }, 60);
   }
   btnDraw.addEventListener('click', drawBall);
+  btnTvDraw.addEventListener('click', drawBall);
 
   document.getElementById('btnResetBalls').addEventListener('click', ()=>{
     if(!confirm('¿Reiniciar las balotas extraídas? Los cartones (QR / impresos) seguirán siendo válidos.')) return;
@@ -773,10 +976,12 @@
     if(!confirm('¿Iniciar un juego totalmente nuevo? Esto invalidará los cartones QR/impresos ya entregados, porque cambiará la semilla de la partida.')) return;
     state.seed = randomSeed();
     state.drawn = [];
+    state.gameNum = (state.gameNum || 1) + 1;
     saveState();
     updateSeedLabel();
     refreshHistoryAndCount();
     refreshBoard();
+    document.getElementById('tvGameNum').textContent = state.gameNum;
   });
 
   function updateSeedLabel(){
@@ -979,7 +1184,10 @@
     document.getElementById('hostView').hidden = false;
     updateSeedLabel();
     buildBoard();
+    buildTvBoard();
     buildModes();
+    renderPatternPreview(state.mode);
+    document.getElementById('tvGameNum').textContent = state.gameNum;
     refreshHistoryAndCount();
     refreshBoard();
     let tvPref = false;
