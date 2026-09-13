@@ -777,7 +777,13 @@
   function pickVoice(){
     if(!('speechSynthesis' in window)) return;
     const voices = speechSynthesis.getVoices();
-    spanishVoice = voices.find(v=>v.lang && v.lang.toLowerCase().startsWith('es')) || voices[0] || null;
+    const esVoices = voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith('es'));
+    // Las voces "Google" suelen sonar más naturales y expresivas que las del sistema operativo.
+    spanishVoice = esVoices.find(v=>/google/i.test(v.name))
+      || esVoices.find(v=>/female|mujer/i.test(v.name))
+      || esVoices[0]
+      || voices[0]
+      || null;
   }
   if('speechSynthesis' in window){
     pickVoice();
@@ -789,10 +795,15 @@
     if(!('speechSynthesis' in window)) return;
     try{
       speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(letterForNumber(n) + ', ' + n);
+      // Punto en vez de coma tras la letra: con una sola letra seguida de coma,
+      // algunos motores de voz se "comen" la letra (reportado con la O). El punto
+      // fuerza a leerla como una inicial independiente.
+      const u = new SpeechSynthesisUtterance(letterForNumber(n) + '. ' + n);
       u.lang = 'es-ES';
       if(spanishVoice) u.voice = spanishVoice;
-      u.rate = 0.95;
+      u.rate = 1.05;
+      u.pitch = 1.25;
+      u.volume = 1;
       speechSynthesis.speak(u);
     }catch(e){/* la síntesis de voz no está disponible en este navegador */}
   }
