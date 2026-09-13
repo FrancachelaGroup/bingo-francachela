@@ -60,7 +60,8 @@
     text-shadow:0 0 30px rgba(255,46,136,.35);
   }
   .brand small{display:block;color:var(--text-dim);font-weight:500;letter-spacing:2px;}
-  .topbar-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .topbar-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .organizer-actions{display:flex;gap:10px;flex-wrap:wrap;}
 
   .neon-btn{
     border-radius:12px;border:1px solid var(--border);
@@ -90,6 +91,30 @@
     gap:18px;
   }
   @media (max-width:1100px){ .grid-main{grid-template-columns:1fr;} }
+
+  /* ---------- Modo TV (pantalla de audiencia) ---------- */
+  #hostView.tv-mode #organizerActions,
+  #hostView.tv-mode #modePanelWrap,
+  #hostView.tv-mode #verifyPanelWrap{
+    display:none;
+  }
+  #hostView.tv-mode .grid-main{
+    grid-template-columns:1fr;
+    max-width:1200px;
+    margin:0 auto;
+  }
+  #hostView.tv-mode .last-ball{
+    width:230px;height:230px;
+  }
+  #hostView.tv-mode .last-ball .letter{font-size:2rem;}
+  #hostView.tv-mode .last-ball .num{font-size:4.5rem;}
+  #hostView.tv-mode .draw-actions .neon-btn.big{font-size:1.4rem;padding:20px 32px;}
+  #hostView.tv-mode .remaining-count{font-size:1.1rem;}
+  #hostView.tv-mode .history{max-height:none;}
+  #hostView.tv-mode .chip{font-size:1.1rem;padding:8px 12px;min-width:44px;}
+  #hostView.tv-mode #boardPanelWrap h2{font-size:1.5rem;}
+  #hostView.tv-mode .board-col-head{font-size:1.8rem;padding:10px 0;}
+  #hostView.tv-mode .ball-cell{font-size:1.3rem;}
 
   .panel{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
@@ -310,14 +335,17 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="neon-btn purple" id="btnQr">📱 Generar QR para Jugadores</button>
-        <button class="neon-btn cyan" id="btnPrint">🖨️ Imprimir Cartones</button>
-        <button class="neon-btn" id="btnResetBalls">🔁 Reiniciar Balotas</button>
-        <button class="neon-btn pink" id="btnNewGame">✨ Nuevo Juego</button>
+        <button class="neon-btn cyan" id="btnTvMode">🖥️ Modo TV</button>
+        <div id="organizerActions" class="organizer-actions">
+          <button class="neon-btn purple" id="btnQr">📱 Generar QR para Jugadores</button>
+          <button class="neon-btn cyan" id="btnPrint">🖨️ Imprimir Cartones</button>
+          <button class="neon-btn" id="btnResetBalls">🔁 Reiniciar Balotas</button>
+          <button class="neon-btn pink" id="btnNewGame">✨ Nuevo Juego</button>
+        </div>
       </div>
     </div>
 
-    <div class="grid-main">
+    <div class="grid-main" id="gridMain">
       <!-- Draw panel -->
       <div>
         <div class="panel">
@@ -336,20 +364,20 @@
           <div class="history" id="history"></div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="modePanelWrap">
           <h2>Modo de Juego<span>Patrón que se validará en el verificador</span></h2>
           <div class="mode-list" id="modeList"></div>
         </div>
       </div>
 
       <!-- Board -->
-      <div class="panel" style="height:fit-content;">
+      <div class="panel" id="boardPanelWrap" style="height:fit-content;">
         <h2>Tablero de Balotas (1-75)</h2>
         <div class="board" id="board"></div>
       </div>
 
       <!-- Verify -->
-      <div>
+      <div id="verifyPanelWrap">
         <div class="panel">
           <h2>Verificador de Ganador<span>Ingresa el número del cartón</span></h2>
           <div class="verify-row">
@@ -929,6 +957,22 @@
   });
 
   /* ======================================================
+     MODO TV (pantalla de audiencia, sin controles del
+     organizador): pensado para cuando se transmite/conecta
+     esta misma pantalla al televisor del evento.
+  ====================================================== */
+  function setTvMode(on){
+    const hostView = document.getElementById('hostView');
+    hostView.classList.toggle('tv-mode', on);
+    document.getElementById('btnTvMode').textContent = on ? '🖥️ Salir de Modo TV' : '🖥️ Modo TV';
+    try{ localStorage.setItem('bingoFrancachela_tvMode', on ? '1' : '0'); }catch(e){}
+  }
+  document.getElementById('btnTvMode').addEventListener('click', ()=>{
+    const hostView = document.getElementById('hostView');
+    setTvMode(!hostView.classList.contains('tv-mode'));
+  });
+
+  /* ======================================================
      INIT HOST
   ====================================================== */
   function initHost(){
@@ -938,6 +982,9 @@
     buildModes();
     refreshHistoryAndCount();
     refreshBoard();
+    let tvPref = false;
+    try{ tvPref = localStorage.getItem('bingoFrancachela_tvMode') === '1'; }catch(e){}
+    setTvMode(tvPref);
   }
 
   /* ======================================================
