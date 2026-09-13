@@ -375,20 +375,52 @@
     background:radial-gradient(circle at 50% 45%, #2a1848, #05010c 75%);
     display:flex;flex-direction:column;align-items:center;justify-content:center;
   }
-  .tv-reveal-letter{
-    font-family:'Baloo 2';font-weight:800;color:var(--cyan);
-    font-size:6vw;letter-spacing:1vw;
-    text-shadow:0 0 30px var(--cyan);
-  }
-  .tv-reveal-num{
-    font-family:'Baloo 2';font-weight:800;color:#fff;
-    font-size:34vw;line-height:1;
-    text-shadow:0 0 60px var(--pink), 0 0 120px var(--purple);
+  .tv-ball-graphic{
+    position:relative;
+    width:min(56vh,72vw);
+    aspect-ratio:1/1;
+    border-radius:50%;
+    box-sizing:border-box;
+    border:1.4vh solid var(--panel-2);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 34% 28%, #ffffff 0%, #f4f0ff 30%, #ded2f7 62%, #b9a8e0 100%);
+    box-shadow:
+      inset 0 -2vh 4vh rgba(0,0,0,.25),
+      inset 0 1.5vh 3vh rgba(255,255,255,.8);
     animation:tvRevealPop .5s cubic-bezier(.2,1.4,.4,1);
+  }
+  .tv-ball-graphic::before{
+    content:'';
+    position:absolute; top:10%; left:16%;
+    width:26%; height:16%;
+    background:rgba(255,255,255,.9);
+    border-radius:50%;
+    filter:blur(6px);
+    transform:rotate(-25deg);
+  }
+  .tv-ball-graphic.b{border-color:var(--pink);   box-shadow:inset 0 -2vh 4vh rgba(0,0,0,.25), inset 0 1.5vh 3vh rgba(255,255,255,.8), 0 0 8vh 1vh rgba(255,46,136,.65);}
+  .tv-ball-graphic.i{border-color:var(--cyan);   box-shadow:inset 0 -2vh 4vh rgba(0,0,0,.25), inset 0 1.5vh 3vh rgba(255,255,255,.8), 0 0 8vh 1vh rgba(0,240,255,.65);}
+  .tv-ball-graphic.n{border-color:var(--yellow); box-shadow:inset 0 -2vh 4vh rgba(0,0,0,.25), inset 0 1.5vh 3vh rgba(255,255,255,.8), 0 0 8vh 1vh rgba(255,230,0,.65);}
+  .tv-ball-graphic.g{border-color:var(--purple); box-shadow:inset 0 -2vh 4vh rgba(0,0,0,.25), inset 0 1.5vh 3vh rgba(255,255,255,.8), 0 0 8vh 1vh rgba(176,38,255,.65);}
+  .tv-ball-graphic.o{border-color:var(--green);  box-shadow:inset 0 -2vh 4vh rgba(0,0,0,.25), inset 0 1.5vh 3vh rgba(255,255,255,.8), 0 0 8vh 1vh rgba(34,255,156,.65);}
+  .tv-reveal-letter{
+    position:relative;z-index:1;
+    font-family:'Baloo 2';font-weight:800;
+    font-size:7vh;letter-spacing:.3vh;
+  }
+  .tv-ball-graphic.b .tv-reveal-letter{color:var(--pink);}
+  .tv-ball-graphic.i .tv-reveal-letter{color:#0090a8;}
+  .tv-ball-graphic.n .tv-reveal-letter{color:#a88700;}
+  .tv-ball-graphic.g .tv-reveal-letter{color:var(--purple);}
+  .tv-ball-graphic.o .tv-reveal-letter{color:#0a9c5c;}
+  .tv-reveal-num{
+    position:relative;z-index:1;
+    font-family:'Baloo 2';font-weight:800;color:#20142e;
+    font-size:19vh;line-height:.95;
   }
   @keyframes tvRevealPop{
     0%{transform:scale(.3);opacity:0;}
-    70%{transform:scale(1.12);opacity:1;}
+    70%{transform:scale(1.1);opacity:1;}
     100%{transform:scale(1);opacity:1;}
   }
 
@@ -565,8 +597,10 @@
 
   <!-- ============ REVELACIÓN DE BALOTA A PANTALLA COMPLETA (MODO TV) ============ -->
   <div class="tv-reveal" id="tvRevealOverlay" hidden>
-    <div class="tv-reveal-letter" id="tvRevealLetter">B</div>
-    <div class="tv-reveal-num" id="tvRevealNum">7</div>
+    <div class="tv-ball-graphic" id="tvRevealBall">
+      <div class="tv-reveal-letter" id="tvRevealLetter">B</div>
+      <div class="tv-reveal-num" id="tvRevealNum">7</div>
+    </div>
   </div>
 
   <!-- ============ PRINT AREA (paper cards) ============ -->
@@ -970,12 +1004,15 @@
       onDone();
       return;
     }
-    tvRevealLetterEl.textContent = letterForNumber(n);
+    const ballGraphic = document.getElementById('tvRevealBall');
+    const letter = letterForNumber(n);
+    tvRevealLetterEl.textContent = letter;
     tvRevealNumEl.textContent = n;
+    ballGraphic.className = 'tv-ball-graphic ' + CLASS_BY_LETTER[letter];
     tvRevealOverlay.hidden = false;
-    tvRevealNumEl.style.animation = 'none';
-    void tvRevealNumEl.offsetWidth; // fuerza reflow para reiniciar la animación
-    tvRevealNumEl.style.animation = '';
+    ballGraphic.style.animation = 'none';
+    void ballGraphic.offsetWidth; // fuerza reflow para reiniciar la animación
+    ballGraphic.style.animation = '';
 
     for(let i=0;i<REVEAL_REPEATS;i++){
       setTimeout(()=>announce(n), i * REVEAL_INTERVAL_MS);
@@ -1029,6 +1066,15 @@
   }
   btnDraw.addEventListener('click', drawBall);
   btnTvDraw.addEventListener('click', drawBall);
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.code !== 'Space' && e.key !== ' ') return;
+    if(document.getElementById('hostView').hidden) return; // solo en la vista del organizador
+    const tag = document.activeElement ? document.activeElement.tagName : '';
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    e.preventDefault();
+    drawBall();
+  });
 
   document.getElementById('btnResetBalls').addEventListener('click', ()=>{
     if(!confirm('¿Reiniciar las balotas extraídas? Los cartones (QR / impresos) seguirán siendo válidos.')) return;
