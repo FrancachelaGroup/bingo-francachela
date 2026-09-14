@@ -145,6 +145,12 @@
   }
   .tv-cell.last{outline:3px solid var(--yellow);box-shadow:0 0 20px var(--yellow);}
 
+  .tv-board-wrap.restricted .tv-row{transition:opacity .3s ease;opacity:.3;}
+  .tv-board-wrap.restricted .tv-row.active-column{
+    opacity:1;border-radius:10px;
+    box-shadow:0 0 0 2px var(--yellow), 0 0 26px rgba(255,230,0,.5);
+  }
+
   .tv-side{
     flex:0 0 260px;
     display:flex;
@@ -266,6 +272,12 @@
     transform:scale(1.05);
   }
   .ball-cell.last{outline:3px solid var(--yellow);box-shadow:0 0 20px var(--yellow);}
+
+  .board.restricted .board-col{transition:opacity .3s ease;opacity:.35;}
+  .board.restricted .board-col.active-column{
+    opacity:1;border-radius:12px;
+    box-shadow:0 0 0 2px var(--yellow), 0 0 22px rgba(255,230,0,.5);
+  }
 
   /* ---------- Mode panel ---------- */
   .mode-list{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
@@ -884,6 +896,7 @@
     LETTERS.forEach((letter,ci)=>{
       const col = document.createElement('div');
       col.className = 'board-col';
+      col.dataset.colIndex = ci;
       const head = document.createElement('div');
       head.className = 'board-col-head ' + CLASS_BY_LETTER[letter];
       head.textContent = letter;
@@ -919,6 +932,7 @@
     LETTERS.forEach((letter,ci)=>{
       const row = document.createElement('div');
       row.className = 'tv-row';
+      row.dataset.colIndex = ci;
       const head = document.createElement('div');
       head.className = 'tv-letter ' + CLASS_BY_LETTER[letter];
       head.textContent = letter;
@@ -1029,6 +1043,7 @@
         saveState();
         buildModes();
         renderPatternPreview(state.mode);
+        refreshHistoryAndCount();
       });
       modeListEl.appendChild(btn);
     });
@@ -1039,6 +1054,7 @@
     state.lineaSubMode = lineaSubSelectEl.value;
     saveState();
     renderPatternPreview(state.mode);
+    refreshHistoryAndCount();
   });
 
   /* ======================================================
@@ -1056,17 +1072,45 @@
   const tvRemainingEl = document.getElementById('tvRemaining');
   const btnTvDraw = document.getElementById('btnTvDraw');
 
+  const COLUMN_BY_LINE_ID = {'col-b':0,'col-i':1,'col-n':2,'col-g':3,'col-o':4};
+  function getActiveColumnIndex(){
+    if(state.mode !== 'linea') return null;
+    const idx = COLUMN_BY_LINE_ID[state.lineaSubMode];
+    return idx === undefined ? null : idx;
+  }
+
   function remainingPool(){
     const drawnSet = new Set(state.drawn);
+    const colIdx = getActiveColumnIndex();
     const pool = [];
-    for(let n=1;n<=75;n++) if(!drawnSet.has(n)) pool.push(n);
+    if(colIdx !== null){
+      const [min,max] = RANGES[colIdx];
+      for(let n=min;n<=max;n++) if(!drawnSet.has(n)) pool.push(n);
+    }else{
+      for(let n=1;n<=75;n++) if(!drawnSet.has(n)) pool.push(n);
+    }
     return pool;
   }
 
+  function refreshActiveColumnHighlight(){
+    const idx = getActiveColumnIndex();
+    boardEl.classList.toggle('restricted', idx !== null);
+    tvBoardWrapEl.classList.toggle('restricted', idx !== null);
+    boardEl.querySelectorAll('.board-col').forEach(el=>{
+      el.classList.toggle('active-column', Number(el.dataset.colIndex) === idx);
+    });
+    tvBoardWrapEl.querySelectorAll('.tv-row').forEach(el=>{
+      el.classList.toggle('active-column', Number(el.dataset.colIndex) === idx);
+    });
+  }
+
   function refreshHistoryAndCount(){
+    const colIdx = getActiveColumnIndex();
+    const totalInPlay = colIdx !== null ? 15 : 75;
     const remaining = remainingPool().length;
-    remainingCountEl.textContent = remaining + ' balotas restantes de 75';
+    remainingCountEl.textContent = remaining + ' balotas restantes de ' + totalInPlay;
     tvRemainingEl.textContent = remaining + ' restantes';
+    refreshActiveColumnHighlight();
     historyEl.innerHTML = '';
     for(let i=state.drawn.length-1;i>=0;i--){
       const n = state.drawn[i];
