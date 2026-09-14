@@ -280,6 +280,13 @@
     box-shadow:0 0 16px rgba(0,240,255,.35);
   }
 
+  #lineaSubPanel{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+  .linea-sub-label{display:block;color:var(--text-dim);font-size:.85rem;margin-bottom:8px;}
+  #lineaSubSelect{
+    width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+    background:var(--bg-1);color:var(--text);font-size:.95rem;
+  }
+
   /* ---------- Verify panel ---------- */
   .verify-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
   .verify-row input{
@@ -510,6 +517,31 @@
         <div class="panel" id="modePanelWrap">
           <h2>Modo de Juego<span>Patrón que se validará en el verificador</span></h2>
           <div class="mode-list" id="modeList"></div>
+          <div id="lineaSubPanel" hidden>
+            <label class="linea-sub-label" for="lineaSubSelect">¿Qué línea(s) cuentan para ganar?</label>
+            <select id="lineaSubSelect">
+              <optgroup label="General">
+                <option value="any">Cualquier línea (horizontal, vertical o diagonal)</option>
+                <option value="horizontal">Cualquier horizontal</option>
+                <option value="vertical">Cualquier vertical</option>
+                <option value="diagonal">Cualquier diagonal</option>
+              </optgroup>
+              <optgroup label="Línea específica">
+                <option value="fila1">Fila 1</option>
+                <option value="fila2">Fila 2</option>
+                <option value="fila3">Fila 3 (centro)</option>
+                <option value="fila4">Fila 4</option>
+                <option value="fila5">Fila 5</option>
+                <option value="col-b">Columna B</option>
+                <option value="col-i">Columna I</option>
+                <option value="col-n">Columna N</option>
+                <option value="col-g">Columna G</option>
+                <option value="col-o">Columna O</option>
+                <option value="diag1">Diagonal ↘</option>
+                <option value="diag2">Diagonal ↙</option>
+              </optgroup>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -706,12 +738,31 @@
   function allTrue(hits){
     return hits.every(row => row.every(v => v));
   }
-  function checkLinea(hits){
-    for(let r=0;r<5;r++) if(hits[r].every(v=>v)) return true;
-    for(let c=0;c<5;c++) if(hits.every(row=>row[c])) return true;
-    if([0,1,2,3,4].every(i=>hits[i][i])) return true;
-    if([0,1,2,3,4].every(i=>hits[i][4-i])) return true;
-    return false;
+  const LINES = [
+    {id:'fila1', label:'Fila 1',         group:'horizontal', cells:[0,1,2,3,4].map(c=>[0,c])},
+    {id:'fila2', label:'Fila 2',         group:'horizontal', cells:[0,1,2,3,4].map(c=>[1,c])},
+    {id:'fila3', label:'Fila 3 (centro)',group:'horizontal', cells:[0,1,2,3,4].map(c=>[2,c])},
+    {id:'fila4', label:'Fila 4',         group:'horizontal', cells:[0,1,2,3,4].map(c=>[3,c])},
+    {id:'fila5', label:'Fila 5',         group:'horizontal', cells:[0,1,2,3,4].map(c=>[4,c])},
+    {id:'col-b', label:'Columna B',      group:'vertical',   cells:[0,1,2,3,4].map(r=>[r,0])},
+    {id:'col-i', label:'Columna I',      group:'vertical',   cells:[0,1,2,3,4].map(r=>[r,1])},
+    {id:'col-n', label:'Columna N',      group:'vertical',   cells:[0,1,2,3,4].map(r=>[r,2])},
+    {id:'col-g', label:'Columna G',      group:'vertical',   cells:[0,1,2,3,4].map(r=>[r,3])},
+    {id:'col-o', label:'Columna O',      group:'vertical',   cells:[0,1,2,3,4].map(r=>[r,4])},
+    {id:'diag1', label:'Diagonal ↘',     group:'diagonal',   cells:[0,1,2,3,4].map(i=>[i,i])},
+    {id:'diag2', label:'Diagonal ↙',     group:'diagonal',   cells:[0,1,2,3,4].map(i=>[i,4-i])},
+  ];
+  function lineById(id){ return LINES.find(l=>l.id===id) || null; }
+  function checkLineaSub(hits, subMode){
+    let candidates;
+    if(subMode === 'horizontal') candidates = LINES.filter(l=>l.group==='horizontal');
+    else if(subMode === 'vertical') candidates = LINES.filter(l=>l.group==='vertical');
+    else if(subMode === 'diagonal') candidates = LINES.filter(l=>l.group==='diagonal');
+    else{
+      const specific = lineById(subMode);
+      candidates = specific ? [specific] : LINES; // 'any' o valor desconocido -> cualquiera de las 12
+    }
+    return candidates.some(line => line.cells.every(([r,c])=>hits[r][c]));
   }
   function checkX(hits){
     const d1 = [0,1,2,3,4].every(i=>hits[i][i]);
@@ -743,7 +794,7 @@
 
   const MODES = [
     {id:'lleno',    name:'Cartón Lleno',  ico:'🀄', check: allTrue},
-    {id:'linea',    name:'Línea',         ico:'➖', check: checkLinea},
+    {id:'linea',    name:'Línea',         ico:'➖', check: hits => checkLineaSub(hits, state.lineaSubMode || 'any')},
     {id:'x',        name:'X',             ico:'❌', check: checkX},
     {id:'cruz',     name:'Cruz',          ico:'✚',  check: checkCruz},
     {id:'esquinas', name:'4 Esquinas',    ico:'🎯', check: checkCorners},
@@ -776,13 +827,15 @@
         seed: state.seed,
         drawn: state.drawn,
         mode: state.mode,
-        gameNum: state.gameNum
+        gameNum: state.gameNum,
+        lineaSubMode: state.lineaSubMode
       }));
     }catch(e){/* almacenamiento no disponible, se continua sin persistencia */}
   }
 
-  let state = loadState() || { seed: randomSeed(), drawn: [], mode: 'lleno', gameNum: 1 };
+  let state = loadState() || { seed: randomSeed(), drawn: [], mode: 'lleno', gameNum: 1, lineaSubMode: 'any' };
   if(!state.gameNum) state.gameNum = 1;
+  if(!state.lineaSubMode) state.lineaSubMode = 'any';
 
   /* ======================================================
      VOZ (Web Speech API)
@@ -901,9 +954,20 @@
       case 'lleno':
         for(let r=0;r<5;r++) for(let c=0;c<5;c++) add(r,c);
         break;
-      case 'linea':
-        for(let c=0;c<5;c++) add(2,c);
+      case 'linea':{
+        const sub = state.lineaSubMode || 'any';
+        const specific = lineById(sub);
+        if(specific){
+          specific.cells.forEach(([r,c])=>add(r,c));
+        }else if(sub === 'vertical'){
+          for(let r=0;r<5;r++) add(r,2);
+        }else if(sub === 'diagonal'){
+          for(let i=0;i<5;i++) add(i,i);
+        }else{
+          for(let c=0;c<5;c++) add(2,c); // 'any' u 'horizontal' -> fila central como ejemplo
+        }
         break;
+      }
       case 'x':
         for(let i=0;i<5;i++){ add(i,i); add(i,4-i); }
         break;
@@ -925,6 +989,14 @@
   }
   const tvPatternGridEl = document.getElementById('tvPatternGrid');
   const tvPatternLabelEl = document.getElementById('tvPatternLabel');
+  function lineaSubLabel(sub){
+    const specific = lineById(sub);
+    if(specific) return 'Línea — ' + specific.label;
+    if(sub === 'horizontal') return 'Línea Horizontal (cualquiera)';
+    if(sub === 'vertical') return 'Línea Vertical (cualquiera)';
+    if(sub === 'diagonal') return 'Línea Diagonal (cualquiera)';
+    return 'Línea (cualquiera)';
+  }
   function renderPatternPreview(modeId){
     const mode = modeById(modeId);
     const on = canonicalPatternCells(modeId);
@@ -936,13 +1008,15 @@
         tvPatternGridEl.appendChild(cell);
       }
     }
-    tvPatternLabelEl.textContent = mode.name;
+    tvPatternLabelEl.textContent = modeId === 'linea' ? lineaSubLabel(state.lineaSubMode || 'any') : mode.name;
   }
 
   /* ======================================================
      RENDER: MODOS DE JUEGO
   ====================================================== */
   const modeListEl = document.getElementById('modeList');
+  const lineaSubPanelEl = document.getElementById('lineaSubPanel');
+  const lineaSubSelectEl = document.getElementById('lineaSubSelect');
   function buildModes(){
     modeListEl.innerHTML = '';
     MODES.forEach(m=>{
@@ -958,7 +1032,14 @@
       });
       modeListEl.appendChild(btn);
     });
+    lineaSubPanelEl.hidden = state.mode !== 'linea';
+    lineaSubSelectEl.value = state.lineaSubMode || 'any';
   }
+  lineaSubSelectEl.addEventListener('change', ()=>{
+    state.lineaSubMode = lineaSubSelectEl.value;
+    saveState();
+    renderPatternPreview(state.mode);
+  });
 
   /* ======================================================
      EXTRACCIÓN DE BALOTAS
