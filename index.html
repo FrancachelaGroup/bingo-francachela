@@ -353,6 +353,10 @@
     background:var(--panel-2);border:1px solid var(--yellow);color:var(--yellow);
     font-family:'Baloo 2';font-weight:800;font-size:1.2rem;box-shadow:0 0 18px rgba(255,230,0,.3);
   }
+  .player-seed{
+    display:block;margin-top:8px;color:var(--text-dim);font-size:.75rem;
+    letter-spacing:1px;word-break:break-all;
+  }
   .player-card{
     display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:100%;
     background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:14px;
@@ -609,6 +613,7 @@
       <img src="logo-francachela.png" alt="Francachela by Mr. Pizza" class="player-logo">
       <h1>🎲 BINGO FRANCACHELA</h1>
       <div class="player-id-badge">CARTÓN #<span id="pCardId">--</span></div>
+      <div class="player-seed" id="pSeedLabel">SEMILLA: ---</div>
     </div>
     <div class="player-card" id="playerCard"></div>
     <div class="player-actions">
@@ -1470,6 +1475,7 @@
   function initPlayer(playId, playSeed){
     document.getElementById('playerView').hidden = false;
     document.getElementById('pCardId').textContent = playId;
+    document.getElementById('pSeedLabel').textContent = 'SEMILLA: ' + playSeed;
 
     const grid = generateCard(playSeed, playId);
     const marksKey = 'bingoFrancachela_marks_' + playSeed + '_' + playId;
