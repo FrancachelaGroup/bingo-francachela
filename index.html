@@ -92,6 +92,9 @@
     gap:18px;
   }
   @media (max-width:1100px){ .grid-main{grid-template-columns:1fr;} }
+  .grid-main.board-hidden{ grid-template-columns:1.2fr 1fr; }
+  @media (max-width:1100px){ .grid-main.board-hidden{grid-template-columns:1fr;} }
+  #boardPanelWrap[hidden]{ display:none; }
 
   /* ---------- Modo TV (pantalla de audiencia) ---------- */
   #hostView.tv-mode #organizerActions{ display:none; }
@@ -558,6 +561,7 @@
       <div class="topbar-actions">
         <button class="neon-btn cyan" id="btnTvMode">🖥️ Modo TV</button>
         <div id="organizerActions" class="organizer-actions">
+          <button class="neon-btn" id="btnToggleBoard">📋 Mostrar Tablero</button>
           <button class="neon-btn purple" id="btnQr">📱 Generar QR para Jugadores</button>
           <button class="neon-btn cyan" id="btnPrint">🖨️ Imprimir Cartones</button>
           <button class="neon-btn" id="btnResetBalls">🔁 Reiniciar Balotas</button>
@@ -627,7 +631,7 @@
       </div>
 
       <!-- Board -->
-      <div class="panel" id="boardPanelWrap" style="height:fit-content;">
+      <div class="panel" id="boardPanelWrap" style="height:fit-content;" hidden>
         <h2>Tablero de Balotas (1-75)</h2>
         <div class="board" id="board"></div>
       </div>
@@ -1578,11 +1582,24 @@
     refreshBoard();
   }
 
+  function setBoardPanelVisible(on){
+    document.getElementById('boardPanelWrap').hidden = !on;
+    document.getElementById('gridMain').classList.toggle('board-hidden', !on);
+    document.getElementById('btnToggleBoard').textContent = on ? '📋 Ocultar Tablero' : '📋 Mostrar Tablero';
+    try{ localStorage.setItem('bingoFrancachela_boardVisible', on ? '1' : '0'); }catch(e){}
+  }
+  document.getElementById('btnToggleBoard').addEventListener('click', ()=>{
+    setBoardPanelVisible(document.getElementById('boardPanelWrap').hidden);
+  });
+
   function initHost(){
     document.getElementById('hostView').hidden = false;
     buildBoard();
     buildTvBoard();
     syncUiFromState();
+    let boardPref = false;
+    try{ boardPref = localStorage.getItem('bingoFrancachela_boardVisible') === '1'; }catch(e){}
+    setBoardPanelVisible(boardPref);
     let tvPref = false;
     try{ tvPref = localStorage.getItem('bingoFrancachela_tvMode') === '1'; }catch(e){}
     setTvMode(tvPref);
