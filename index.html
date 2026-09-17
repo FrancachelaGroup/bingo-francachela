@@ -91,9 +91,28 @@
     grid-template-columns:1.1fr 1.4fr 1fr;
     gap:18px;
   }
-  @media (max-width:1100px){ .grid-main{grid-template-columns:1fr;} }
-  .grid-main.board-hidden{ grid-template-columns:1.2fr 1fr; }
-  @media (max-width:1100px){ .grid-main.board-hidden{grid-template-columns:1fr;} }
+  #drawPanelWrap{ grid-column:1; grid-row:1; }
+  #modePanelWrap{ grid-column:1; grid-row:2; }
+  #boardPanelWrap{ grid-column:2; grid-row:1 / span 2; }
+  #verifyPanelWrap{ grid-column:3; grid-row:1 / span 2; }
+
+  /* Con el tablero oculto: 3 columnas parejas, cada panel en su
+     propia fila corta — nada queda apilado, así cabe sin scroll
+     incluso en una ventana de control chica. */
+  .grid-main.board-hidden{
+    grid-template-columns:1fr 1fr 1fr;
+    align-items:start;
+  }
+  .grid-main.board-hidden #drawPanelWrap{ grid-column:1; grid-row:1; }
+  .grid-main.board-hidden #modePanelWrap{ grid-column:2; grid-row:1; }
+  .grid-main.board-hidden #verifyPanelWrap{ grid-column:3; grid-row:1; }
+
+  @media (max-width:1100px){
+    .grid-main, .grid-main.board-hidden{ grid-template-columns:1fr; }
+    #drawPanelWrap, #modePanelWrap, #boardPanelWrap, #verifyPanelWrap{
+      grid-column:auto; grid-row:auto;
+    }
+  }
   #boardPanelWrap[hidden]{ display:none; }
 
   /* ---------- Modo TV (pantalla de audiencia) ---------- */
@@ -572,7 +591,7 @@
 
     <div class="grid-main" id="gridMain">
       <!-- Draw panel -->
-      <div>
+      <div id="drawPanelWrap">
         <div class="panel">
           <h2>Extracción de Balotas<span>Toca para sacar la siguiente</span></h2>
           <div class="last-ball-wrap">
@@ -598,35 +617,35 @@
           </div>
           <div class="history" id="history"></div>
         </div>
+      </div>
 
-        <div class="panel" id="modePanelWrap">
-          <h2>Modo de Juego<span>Patrón que se validará en el verificador</span></h2>
-          <div class="mode-list" id="modeList"></div>
-          <div id="lineaSubPanel" hidden>
-            <label class="linea-sub-label" for="lineaSubSelect">¿Qué línea(s) cuentan para ganar?</label>
-            <select id="lineaSubSelect">
-              <optgroup label="General">
-                <option value="any">Cualquier línea (horizontal, vertical o diagonal)</option>
-                <option value="horizontal">Cualquier horizontal</option>
-                <option value="vertical">Cualquier vertical</option>
-                <option value="diagonal">Cualquier diagonal</option>
-              </optgroup>
-              <optgroup label="Línea específica">
-                <option value="fila1">Fila 1</option>
-                <option value="fila2">Fila 2</option>
-                <option value="fila3">Fila 3 (centro)</option>
-                <option value="fila4">Fila 4</option>
-                <option value="fila5">Fila 5</option>
-                <option value="col-b">Columna B</option>
-                <option value="col-i">Columna I</option>
-                <option value="col-n">Columna N</option>
-                <option value="col-g">Columna G</option>
-                <option value="col-o">Columna O</option>
-                <option value="diag1">Diagonal ↘</option>
-                <option value="diag2">Diagonal ↙</option>
-              </optgroup>
-            </select>
-          </div>
+      <div class="panel" id="modePanelWrap">
+        <h2>Modo de Juego<span>Patrón que se validará en el verificador</span></h2>
+        <div class="mode-list" id="modeList"></div>
+        <div id="lineaSubPanel" hidden>
+          <label class="linea-sub-label" for="lineaSubSelect">¿Qué línea(s) cuentan para ganar?</label>
+          <select id="lineaSubSelect">
+            <optgroup label="General">
+              <option value="any">Cualquier línea (horizontal, vertical o diagonal)</option>
+              <option value="horizontal">Cualquier horizontal</option>
+              <option value="vertical">Cualquier vertical</option>
+              <option value="diagonal">Cualquier diagonal</option>
+            </optgroup>
+            <optgroup label="Línea específica">
+              <option value="fila1">Fila 1</option>
+              <option value="fila2">Fila 2</option>
+              <option value="fila3">Fila 3 (centro)</option>
+              <option value="fila4">Fila 4</option>
+              <option value="fila5">Fila 5</option>
+              <option value="col-b">Columna B</option>
+              <option value="col-i">Columna I</option>
+              <option value="col-n">Columna N</option>
+              <option value="col-g">Columna G</option>
+              <option value="col-o">Columna O</option>
+              <option value="diag1">Diagonal ↘</option>
+              <option value="diag2">Diagonal ↙</option>
+            </optgroup>
+          </select>
         </div>
       </div>
 
