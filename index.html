@@ -1448,20 +1448,47 @@
   /* ======================================================
      INIT HOST
   ====================================================== */
-  function initHost(){
-    document.getElementById('hostView').hidden = false;
+  function syncUiFromState(){
     updateSeedLabel();
-    buildBoard();
-    buildTvBoard();
     buildModes();
     renderPatternPreview(state.mode);
     document.getElementById('tvGameNum').textContent = state.gameNum;
     refreshHistoryAndCount();
     refreshBoard();
+  }
+
+  function initHost(){
+    document.getElementById('hostView').hidden = false;
+    buildBoard();
+    buildTvBoard();
+    syncUiFromState();
     let tvPref = false;
     try{ tvPref = localStorage.getItem('bingoFrancachela_tvMode') === '1'; }catch(e){}
     setTvMode(tvPref);
   }
+
+  /* ======================================================
+     SINCRONIZACIÓN ENTRE VENTANAS (misma computadora)
+     Si el organizador abre dos ventanas del mismo navegador
+     — una con Modo TV en la pantalla extendida del televisor,
+     otra con el panel completo en su propia pantalla — ambas
+     comparten el mismo localStorage. Este listener hace que la
+     ventana del TV se actualice sola cuando se extrae una
+     balota o se cambia de modo desde la ventana de control,
+     sin necesitar recargar ni ningún servidor.
+  ====================================================== */
+  window.addEventListener('storage', (e)=>{
+    if(e.key !== STORAGE_KEY) return;
+    if(document.getElementById('hostView').hidden) return;
+    const fresh = loadState();
+    if(!fresh) return;
+    state.seed = fresh.seed;
+    state.drawn = fresh.drawn || [];
+    state.mode = fresh.mode || 'lleno';
+    state.gameNum = fresh.gameNum || 1;
+    state.lineaSubMode = fresh.lineaSubMode || 'any';
+    syncUiFromState();
+  });
 
   /* ======================================================
      MODO JUGADOR (móvil, sin panel de control)
