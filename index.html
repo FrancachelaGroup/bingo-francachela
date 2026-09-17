@@ -46,7 +46,7 @@
   .topbar{
     display:flex;align-items:center;justify-content:space-between;gap:12px;
     flex-wrap:wrap;
-    padding:14px 20px;margin-bottom:18px;
+    padding:11px 18px;margin-bottom:12px;
     background:linear-gradient(120deg,rgba(176,38,255,.18),rgba(0,240,255,.10));
     border:1px solid var(--border);
     border-radius:18px;
@@ -101,15 +101,47 @@
      incluso en una ventana de control chica. */
   .grid-main.board-hidden{
     grid-template-columns:1fr 1fr 1fr;
-    align-items:start;
   }
   .grid-main.board-hidden #drawPanelWrap{ grid-column:1; grid-row:1; }
   .grid-main.board-hidden #modePanelWrap{ grid-column:2; grid-row:1; }
   .grid-main.board-hidden #verifyPanelWrap{ grid-column:3; grid-row:1; }
 
+  /* Ajuste al alto real de la ventana (igual que el Modo TV): con
+     el tablero oculto, la página nunca hace scroll completo — si un
+     panel tiene más contenido del que cabe, ese panel se desplaza
+     solo por dentro. */
+  body.board-panel-hidden{ height:100vh;height:100dvh;overflow:hidden; }
+  body.board-panel-hidden #app{
+    height:100vh;height:100dvh;display:flex;flex-direction:column;padding-block:12px;
+  }
+  body.board-panel-hidden #hostView{ flex:1 1 auto;min-height:0;display:flex;flex-direction:column; }
+  body.board-panel-hidden .topbar{ flex:0 0 auto; }
+  body.board-panel-hidden #gridMain{ flex:1 1 auto;min-height:0; }
+  body.board-panel-hidden #drawPanelWrap,
+  body.board-panel-hidden #modePanelWrap,
+  body.board-panel-hidden #verifyPanelWrap{
+    min-height:0;overflow-y:auto;
+  }
+
+  /* El layout de 3 columnas (tablero oculto) sostiene anchos de
+     ventana bastante angostos por sí solo; solo se apila en una
+     columna si la ventana es realmente estrecha (celular/mitad
+     de pantalla muy angosta). El layout con tablero visible
+     necesita más aire, así que se apila un poco antes. */
   @media (max-width:1100px){
-    .grid-main, .grid-main.board-hidden{ grid-template-columns:1fr; }
-    #drawPanelWrap, #modePanelWrap, #boardPanelWrap, #verifyPanelWrap{
+    .grid-main:not(.board-hidden){ grid-template-columns:1fr; }
+    .grid-main:not(.board-hidden) #drawPanelWrap,
+    .grid-main:not(.board-hidden) #modePanelWrap,
+    .grid-main:not(.board-hidden) #boardPanelWrap,
+    .grid-main:not(.board-hidden) #verifyPanelWrap{
+      grid-column:auto; grid-row:auto;
+    }
+  }
+  @media (max-width:640px){
+    .grid-main.board-hidden{ grid-template-columns:1fr; }
+    .grid-main.board-hidden #drawPanelWrap,
+    .grid-main.board-hidden #modePanelWrap,
+    .grid-main.board-hidden #verifyPanelWrap{
       grid-column:auto; grid-row:auto;
     }
   }
@@ -276,34 +308,34 @@
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
     border:1px solid var(--border);
     border-radius:18px;
-    padding:18px;
-    margin-bottom:18px;
+    padding:15px;
+    margin-bottom:14px;
   }
-  .panel h2{font-size:1.15rem;color:var(--cyan);letter-spacing:1px;margin-bottom:12px;text-transform:uppercase;}
+  .panel h2{font-size:1.1rem;color:var(--cyan);letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;}
   .panel h2 span{color:var(--text-dim);font-size:.7rem;text-transform:none;letter-spacing:0;display:block;font-family:'Poppins';margin-top:2px;}
 
   /* ---------- Draw panel ---------- */
-  .last-ball-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-bottom:16px;}
+  .last-ball-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:10px;}
   .last-ball{
-    width:150px;height:150px;border-radius:50%;
+    width:104px;height:104px;border-radius:50%;
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:radial-gradient(circle at 35% 30%, #2a1848, #12061f 70%);
     border:4px solid var(--yellow);
     box-shadow:0 0 40px rgba(255,230,0,.45), inset 0 0 25px rgba(255,230,0,.15);
     position:relative;
   }
-  .last-ball .letter{font-family:'Baloo 2';font-size:1.3rem;color:var(--cyan);letter-spacing:2px;}
-  .last-ball .num{font-family:'Baloo 2';font-size:3rem;font-weight:800;line-height:1;color:#fff;text-shadow:0 0 18px var(--pink);}
+  .last-ball .letter{font-family:'Baloo 2';font-size:.95rem;color:var(--cyan);letter-spacing:2px;}
+  .last-ball .num{font-family:'Baloo 2';font-size:2.1rem;font-weight:800;line-height:1;color:#fff;text-shadow:0 0 18px var(--pink);}
   .last-ball.flicker{animation:pulse .12s ease infinite alternate;}
   @keyframes pulse{from{transform:scale(1);}to{transform:scale(1.05);}}
-  .last-ball.empty .num{color:var(--text-dim);font-size:1.4rem;}
+  .last-ball.empty .num{color:var(--text-dim);font-size:1.1rem;}
 
-  .draw-actions{display:flex;flex-direction:column;gap:10px;align-items:center;}
+  .draw-actions{display:flex;flex-direction:column;gap:8px;align-items:center;}
   .remaining-count{color:var(--text-dim);font-size:.9rem;}
   .voice-toggle{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--text-dim);}
   .voice-settings{
-    display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px;
-    margin-top:4px;padding-top:10px;border-top:1px solid var(--border);
+    display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;width:100%;max-width:340px;
+    margin-top:4px;padding-top:8px;border-top:1px solid var(--border);
   }
   .voice-setting-row{display:flex;flex-direction:column;gap:5px;font-size:.8rem;color:var(--text-dim);}
   .voice-setting-row span{display:flex;justify-content:space-between;}
@@ -357,13 +389,13 @@
   }
 
   /* ---------- Mode panel ---------- */
-  .mode-list{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .mode-list{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;}
   .mode-btn{
-    padding:12px 8px;border-radius:12px;border:1px solid var(--border);
-    background:var(--panel-2);color:var(--text-dim);font-weight:700;font-size:.85rem;
-    display:flex;flex-direction:column;align-items:center;gap:6px;
+    padding:9px 8px;border-radius:10px;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text-dim);font-weight:700;font-size:.8rem;
+    display:flex;flex-direction:row;align-items:center;justify-content:center;gap:7px;
   }
-  .mode-btn .ico{font-size:1.3rem;}
+  .mode-btn .ico{font-size:1.05rem;}
   .mode-btn.active{
     border-color:var(--cyan);color:#fff;background:rgba(0,240,255,.12);
     box-shadow:0 0 16px rgba(0,240,255,.35);
@@ -1604,6 +1636,7 @@
   function setBoardPanelVisible(on){
     document.getElementById('boardPanelWrap').hidden = !on;
     document.getElementById('gridMain').classList.toggle('board-hidden', !on);
+    document.body.classList.toggle('board-panel-hidden', !on);
     document.getElementById('btnToggleBoard').textContent = on ? '📋 Ocultar Tablero' : '📋 Mostrar Tablero';
     try{ localStorage.setItem('bingoFrancachela_boardVisible', on ? '1' : '0'); }catch(e){}
   }
