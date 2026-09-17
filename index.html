@@ -98,14 +98,34 @@
   #hostView.tv-mode #gridMain{ display:none; }
   #hostView:not(.tv-mode) #tvStage{ display:none; }
 
+  /* Modo TV en pantalla completa real: todo cabe en el alto de la
+     pantalla sin scroll ni necesidad de hacer zoom — el tamaño del
+     texto y las celdas se calcula en base al alto/ancho reales de
+     la pantalla (vh/vw), así se ve grande en cualquier televisor. */
+  body.tv-active{
+    height:100vh;height:100dvh;overflow:hidden;
+  }
+  body.tv-active #app{
+    height:100vh;height:100dvh;max-width:none;
+    padding:1.2vh 1.2vw;
+    display:flex;flex-direction:column;
+  }
+  body.tv-active #hostView{
+    flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  }
+  body.tv-active .topbar{ flex:0 0 auto;margin-bottom:1.2vh; }
+
   .tv-stage{
     display:flex;
     gap:22px;
-    align-items:flex-start;
+    align-items:stretch;
     max-width:1500px;
     margin:0 auto;
   }
   @media (max-width:1000px){ .tv-stage{flex-direction:column;} }
+  body.tv-active .tv-stage{
+    max-width:none;flex:1 1 auto;min-height:0;width:100%;
+  }
 
   .tv-board-wrap{
     flex:1 1 auto;
@@ -117,16 +137,24 @@
     border-radius:20px;
     padding:20px;
   }
+  body.tv-active .tv-board-wrap{
+    min-height:0;padding:1.4vh 1.2vw;gap:1vh;
+  }
   .tv-row{
     display:grid;
     grid-template-columns:64px repeat(15,1fr);
     gap:6px;
+  }
+  body.tv-active .tv-row{
+    grid-template-columns:6vw repeat(15,1fr);
+    gap:.5vw;flex:1 1 0;min-height:0;
   }
   .tv-letter{
     display:flex;align-items:center;justify-content:center;
     font-family:'Baloo 2';font-weight:800;font-size:1.6rem;
     border-radius:10px;background:var(--panel-2);
   }
+  body.tv-active .tv-letter{ font-size:clamp(1.2rem,3.4vh,3rem); }
   .tv-letter.b{color:var(--pink);text-shadow:0 0 10px var(--pink);}
   .tv-letter.i{color:var(--cyan);text-shadow:0 0 10px var(--cyan);}
   .tv-letter.n{color:var(--yellow);text-shadow:0 0 10px var(--yellow);}
@@ -136,6 +164,9 @@
     aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
     border-radius:8px;background:#150a26;border:1px solid var(--border);
     font-weight:700;font-size:1.05rem;color:var(--text-dim);transition:all .25s ease;
+  }
+  body.tv-active .tv-cell{
+    aspect-ratio:auto;font-size:clamp(1rem,2.6vh,2.2rem);
   }
   .tv-cell.drawn{
     background:linear-gradient(140deg,var(--pink),var(--purple));
@@ -157,6 +188,9 @@
     flex-direction:column;
     gap:14px;
   }
+  body.tv-active .tv-side{
+    flex:0 0 clamp(220px,20vw,340px);gap:1.2vh;min-height:0;
+  }
   .tv-tile{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
     border:1px solid var(--border);border-radius:16px;
@@ -164,6 +198,7 @@
   }
   .tv-tile-label{color:var(--text-dim);font-size:.8rem;letter-spacing:2px;text-transform:uppercase;}
   .tv-tile-value{font-family:'Baloo 2';font-size:2rem;font-weight:800;color:var(--cyan);}
+  body.tv-active .tv-tile-value{ font-size:clamp(1.6rem,4vh,3rem); }
 
   .tv-logo-tile{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
@@ -171,6 +206,7 @@
     padding:14px;text-align:center;
   }
   .tv-logo-tile img{max-width:100%;height:auto;filter:drop-shadow(0 0 10px rgba(255,255,255,.2));}
+  body.tv-active .tv-logo-tile img{ max-height:6vh; }
 
   .tv-ball{
     background:radial-gradient(circle at 35% 30%, #2a1848, #12061f 70%);
@@ -180,22 +216,28 @@
     padding:18px 10px;
     text-align:center;
   }
+  body.tv-active .tv-ball{ padding:1.6vh 10px;flex:0 0 auto; }
   .tv-ball-letter{font-family:'Baloo 2';font-size:1.6rem;color:var(--cyan);letter-spacing:2px;}
+  body.tv-active .tv-ball-letter{ font-size:clamp(1.3rem,3.4vh,2.4rem); }
   .tv-ball-num{font-family:'Baloo 2';font-size:4.5rem;font-weight:800;line-height:1;color:#fff;text-shadow:0 0 18px var(--pink);}
+  body.tv-active .tv-ball-num{ font-size:clamp(3rem,9vh,6.5rem); }
   .tv-ball-caption{color:var(--text-dim);font-size:.8rem;letter-spacing:3px;margin-top:6px;}
   .tv-ball.flicker{animation:pulse .12s ease infinite alternate;}
 
   .tv-remaining{text-align:center;color:var(--text-dim);font-size:.95rem;}
+  body.tv-active .tv-remaining{ font-size:clamp(.85rem,1.8vh,1.15rem); }
 
   .tv-pattern-box{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
     border:1px solid var(--border);border-radius:16px;
     padding:16px;text-align:center;
   }
+  body.tv-active .tv-pattern-box{ flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1.4vh 12px; }
   .tv-pattern-grid{
     display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
     max-width:170px;margin:0 auto 12px;
   }
+  body.tv-active .tv-pattern-grid{ max-width:min(220px,16vw); }
   .tv-pattern-cell{
     aspect-ratio:1/1;border-radius:5px;background:var(--panel-2);border:1px solid var(--border);
   }
@@ -206,6 +248,7 @@
   .tv-pattern-label{
     font-family:'Baloo 2';font-weight:800;font-size:1.1rem;color:var(--cyan);
   }
+  body.tv-active .tv-pattern-label{ font-size:clamp(.95rem,2.2vh,1.5rem); }
 
   .panel{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
@@ -1437,6 +1480,7 @@
   function setTvMode(on){
     const hostView = document.getElementById('hostView');
     hostView.classList.toggle('tv-mode', on);
+    document.body.classList.toggle('tv-active', on);
     document.getElementById('btnTvMode').textContent = on ? '🖥️ Salir de Modo TV' : '🖥️ Modo TV';
     try{ localStorage.setItem('bingoFrancachela_tvMode', on ? '1' : '0'); }catch(e){}
   }
