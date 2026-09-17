@@ -1054,17 +1054,24 @@
     const toggle = document.getElementById('voiceToggle');
     if(!toggle || !toggle.checked) return;
     if(!('speechSynthesis' in window)) return;
-    try{
-      speechSynthesis.cancel();
-      const spokenLetter = LETTER_SPEECH_NAMES[letterForNumber(n)];
-      const u = new SpeechSynthesisUtterance(spokenLetter + ', ' + n);
-      u.lang = 'es-ES';
-      if(spanishVoice) u.voice = spanishVoice;
-      u.rate = voiceRate;
-      u.pitch = 1.1;
-      u.volume = 1;
-      speechSynthesis.speak(u);
-    }catch(e){/* la síntesis de voz no está disponible en este navegador */}
+    try{ speechSynthesis.cancel(); }catch(e){}
+    // Chrome tiene un bug conocido: si speak() se llama justo después de
+    // cancel() sin ninguna pausa, el motor de voz se "come" el comienzo
+    // del audio (y como la letra siempre va primero en el texto, es lo
+    // que se pierde). Un pequeño respiro antes de hablar lo evita.
+    setTimeout(()=>{
+      try{
+        speechSynthesis.resume();
+        const spokenLetter = LETTER_SPEECH_NAMES[letterForNumber(n)];
+        const u = new SpeechSynthesisUtterance(spokenLetter + ', ' + n);
+        u.lang = 'es-ES';
+        if(spanishVoice) u.voice = spanishVoice;
+        u.rate = voiceRate;
+        u.pitch = 1.1;
+        u.volume = 1;
+        speechSynthesis.speak(u);
+      }catch(e){/* la síntesis de voz no está disponible en este navegador */}
+    }, 80);
   }
 
   /* ======================================================
