@@ -1017,9 +1017,14 @@
     });
     voiceSelectEl.innerHTML = '';
     sorted.forEach(v=>{
+      const isEs = v.lang && v.lang.toLowerCase().startsWith('es');
       const opt = document.createElement('option');
       opt.value = v.voiceURI;
-      opt.textContent = v.name + ' (' + v.lang + ')';
+      // Se marcan claramente las voces en español: una voz que NO lo sea
+      // pronuncia las letras con reglas fonéticas de su propio idioma
+      // (por eso "be"/"ge" sonaban en inglés), sin importar el texto que
+      // se le mande ni la etiqueta "es-ES" del mensaje.
+      opt.textContent = (isEs ? '🇪🇸 ' : '⚠️ ') + v.name + ' (' + v.lang + ')';
       voiceSelectEl.appendChild(opt);
     });
     if(spanishVoice) voiceSelectEl.value = spanishVoice.voiceURI;
@@ -1037,10 +1042,13 @@
     }else{
       const esVoices = voices.filter(v=>v.lang && v.lang.toLowerCase().startsWith('es'));
       // Las voces "Google" suelen sonar más naturales y expresivas que las del sistema operativo.
+      // OJO: si no hay NINGUNA voz en español instalada, se deja spanishVoice
+      // en null en vez de forzar una voz de otro idioma — así la utterance
+      // usa solo u.lang='es-ES' y el navegador intenta su propia mejor
+      // opción, en vez de sonar garantizadamente en inglés.
       spanishVoice = esVoices.find(v=>/google/i.test(v.name))
         || esVoices.find(v=>/female|mujer/i.test(v.name))
         || esVoices[0]
-        || voices[0]
         || null;
     }
     populateVoiceSelect(voices);
