@@ -290,14 +290,17 @@
     flex:1 1 auto;min-height:0;max-height:100%;overflow:hidden;
     display:flex;flex-direction:column;justify-content:center;align-items:center;
     padding:1.4vh 10px;
+    container-type:size;container-name:patternbox;
   }
   .tv-pattern-grid{
     display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
     max-width:170px;margin:0 auto 12px;
   }
-  /* Más grande que el original (220px) pero con un tope prudente —
-     nunca debe salirse de su caja ni tapar la etiqueta de abajo. */
-  body.tv-active .tv-pattern-grid{ width:min(80%,22vh);max-width:none;gap:.5vh;margin-bottom:1vh; }
+  /* Usa unidades de "container query" (cqh/cqw): se miden contra el
+     tamaño REAL de la caja del patrón, no contra la pantalla entera,
+     así siempre cabe sin importar cuánto espacio le quede disponible
+     — deja además ~30% de alto libre para la etiqueta de abajo. */
+  body.tv-active .tv-pattern-grid{ width:min(88cqw,65cqh);max-width:none;gap:.5vh;margin-bottom:1vh; }
   .tv-pattern-cell{
     aspect-ratio:1/1;border-radius:5px;background:var(--panel-2);border:1px solid var(--border);
   }
