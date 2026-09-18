@@ -988,17 +988,15 @@
   /* ======================================================
      VOZ (Web Speech API)
   ====================================================== */
-  // El prefijo "letra be"/"letra ge" NO resolvió el acento inglés: se probó
-  // en todas las voces marcadas como español y todas seguían leyendo "BI"/
-  // "YI". Eso descarta que sea una voz mal etiquetada — el propio Chrome
-  // normaliza el texto ANTES de pasarlo a cualquier motor de voz, y sigue
-  // reconociendo "be"/"ge" como tokens cortos tipo sigla (o palabra en
-  // inglés) sin importar lo que vaya antes. La solución es el "alfabeto
-  // deletreado" que ya se usa en radios y loterías en español precisamente
-  // para evitar esta confusión entre letras: la letra + "de" + una palabra
-  // común que empieza con ella. Al dejar de ser un token corto ambiguo,
-  // se fuerza la pronunciación fonética en español.
-  const LETTER_SPEECH_NAMES = {B:'be, de burro', I:'i, de iguana', N:'ene, de nido', G:'ge, de gato', O:'o, de oso'};
+  // El "alfabeto deletreado" (be de burro / ge de gato) tampoco resolvió el
+  // acento inglés: se confirmó que SOLO la letra suelta ("be"/"ge") suena
+  // mal — "de burro"/"de gato" y el número sí se oyen en español correcto.
+  // Es decir, el motor reconoce el texto exacto "be"/"ge" como una sigla u
+  // abreviatura conocida (en inglés) sin importar lo que venga después en
+  // el mismo mensaje. La tilde fuerza una grafía que esa coincidencia por
+  // diccionario no reconoce, obligando al motor a usar sus reglas
+  // fonéticas normales en español en vez de la entrada de diccionario.
+  const LETTER_SPEECH_NAMES = {B:'bé, de burro', I:'i, de iguana', N:'ene, de nido', G:'gé, de gato', O:'o, de oso'};
 
   let spanishVoice = null;
   let voiceRate = 0.85;
