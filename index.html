@@ -988,10 +988,12 @@
   /* ======================================================
      VOZ (Web Speech API)
   ====================================================== */
-  // Nombres pronunciables de cada letra: una letra suelta (ej. "O") a veces
-  // se la "come" el motor de voz porque la trata como abreviatura, no como
-  // palabra. Usando el nombre completo se lee siempre de forma confiable.
-  const LETTER_SPEECH_NAMES = {B:'be', I:'i', N:'ene', G:'ge', O:'o'};
+  // Nombres pronunciables de cada letra, con el prefijo "letra": una letra
+  // suelta (ej. "O") a veces se la "come" el motor de voz al tratarla como
+  // abreviatura, y "be"/"ge" a secas coinciden con palabras/siglas en
+  // inglés (el verbo "be", la marca "GE"), así que algunas voces las leen
+  // en inglés en vez de español. El prefijo evita ambos problemas.
+  const LETTER_SPEECH_NAMES = {B:'letra be', I:'letra i', N:'letra ene', G:'letra ge', O:'letra o'};
 
   let spanishVoice = null;
   let voiceRate = 0.85;
