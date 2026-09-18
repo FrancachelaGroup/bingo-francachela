@@ -989,10 +989,10 @@
      VOZ (Web Speech API)
   ====================================================== */
   // "be"/"ge" sueltas se leían en inglés porque el motor las reconocía como
-  // sigla/abreviatura conocida. La tilde (bé/gé) usa una grafía que esa
+  // sigla/abreviatura conocida. La tilde (bé/gé/éne) usa una grafía que esa
   // coincidencia de diccionario no reconoce, forzando las reglas fonéticas
-  // normales en español — confirmado que ya suena bien.
-  const LETTER_SPEECH_NAMES = {B:'bé', I:'i', N:'ene', G:'gé', O:'o'};
+  // normales en español.
+  const LETTER_SPEECH_NAMES = {B:'bé', I:'i', N:'éne', G:'gé', O:'o'};
 
   let spanishVoice = null;
   let voiceRate = 0.85;
