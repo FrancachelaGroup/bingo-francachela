@@ -286,23 +286,28 @@
     border:1px solid var(--border);border-radius:16px;
     padding:16px;text-align:center;
   }
-  body.tv-active .tv-pattern-box{ flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1.4vh 12px; }
+  body.tv-active .tv-pattern-box{ flex:2.2 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1.4vh 10px; }
   .tv-pattern-grid{
     display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
     max-width:170px;margin:0 auto 12px;
   }
-  body.tv-active .tv-pattern-grid{ max-width:min(220px,16vw); }
+  /* Agrandado bastante: usa casi todo el ancho de la columna y hasta
+     ~42vh de alto, en vez del tope fijo de 220px de antes — así se
+     nota el bloque resaltado desde lejos en el televisor. */
+  body.tv-active .tv-pattern-grid{ width:min(94%,42vh);max-width:none;gap:.6vh; }
   .tv-pattern-cell{
     aspect-ratio:1/1;border-radius:5px;background:var(--panel-2);border:1px solid var(--border);
   }
+  body.tv-active .tv-pattern-cell{ border-radius:.6vh; }
   .tv-pattern-cell.on{
     background:linear-gradient(140deg,var(--pink),var(--purple));
     border-color:transparent;box-shadow:0 0 8px rgba(255,46,136,.6);
   }
+  body.tv-active .tv-pattern-cell.on{ box-shadow:0 0 2vh rgba(255,46,136,.85); }
   .tv-pattern-label{
     font-family:'Baloo 2';font-weight:800;font-size:1.1rem;color:var(--cyan);
   }
-  body.tv-active .tv-pattern-label{ font-size:clamp(.95rem,2.2vh,1.5rem); }
+  body.tv-active .tv-pattern-label{ font-size:clamp(1.2rem,3.2vh,2.2rem);margin-top:.6vh; }
 
   .panel{
     background:linear-gradient(180deg,var(--panel),var(--panel-2));
