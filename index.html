@@ -286,15 +286,18 @@
     border:1px solid var(--border);border-radius:16px;
     padding:16px;text-align:center;
   }
-  body.tv-active .tv-pattern-box{ flex:2.2 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:center;padding:1.4vh 10px; }
+  body.tv-active .tv-pattern-box{
+    flex:1 1 auto;min-height:0;max-height:100%;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    padding:1.4vh 10px;
+  }
   .tv-pattern-grid{
     display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
     max-width:170px;margin:0 auto 12px;
   }
-  /* Agrandado bastante: usa casi todo el ancho de la columna y hasta
-     ~42vh de alto, en vez del tope fijo de 220px de antes — así se
-     nota el bloque resaltado desde lejos en el televisor. */
-  body.tv-active .tv-pattern-grid{ width:min(94%,42vh);max-width:none;gap:.6vh; }
+  /* Más grande que el original (220px) pero con un tope prudente —
+     nunca debe salirse de su caja ni tapar la etiqueta de abajo. */
+  body.tv-active .tv-pattern-grid{ width:min(80%,22vh);max-width:none;gap:.5vh;margin-bottom:1vh; }
   .tv-pattern-cell{
     aspect-ratio:1/1;border-radius:5px;background:var(--panel-2);border:1px solid var(--border);
   }
