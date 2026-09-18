@@ -988,12 +988,17 @@
   /* ======================================================
      VOZ (Web Speech API)
   ====================================================== */
-  // Nombres pronunciables de cada letra, con el prefijo "letra": una letra
-  // suelta (ej. "O") a veces se la "come" el motor de voz al tratarla como
-  // abreviatura, y "be"/"ge" a secas coinciden con palabras/siglas en
-  // inglés (el verbo "be", la marca "GE"), así que algunas voces las leen
-  // en inglés en vez de español. El prefijo evita ambos problemas.
-  const LETTER_SPEECH_NAMES = {B:'letra be', I:'letra i', N:'letra ene', G:'letra ge', O:'letra o'};
+  // El prefijo "letra be"/"letra ge" NO resolvió el acento inglés: se probó
+  // en todas las voces marcadas como español y todas seguían leyendo "BI"/
+  // "YI". Eso descarta que sea una voz mal etiquetada — el propio Chrome
+  // normaliza el texto ANTES de pasarlo a cualquier motor de voz, y sigue
+  // reconociendo "be"/"ge" como tokens cortos tipo sigla (o palabra en
+  // inglés) sin importar lo que vaya antes. La solución es el "alfabeto
+  // deletreado" que ya se usa en radios y loterías en español precisamente
+  // para evitar esta confusión entre letras: la letra + "de" + una palabra
+  // común que empieza con ella. Al dejar de ser un token corto ambiguo,
+  // se fuerza la pronunciación fonética en español.
+  const LETTER_SPEECH_NAMES = {B:'be, de burro', I:'i, de iguana', N:'ene, de nido', G:'ge, de gato', O:'o, de oso'};
 
   let spanishVoice = null;
   let voiceRate = 0.85;
