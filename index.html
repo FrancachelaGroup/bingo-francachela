@@ -503,6 +503,25 @@
   .player-actions{display:flex;flex-direction:column;gap:12px;width:100%;margin-top:20px;}
   .player-foot{margin-top:22px;text-align:center;color:var(--text-dim);font-size:.8rem;line-height:1.5;}
 
+  /* ---------- Player gate (verificación de cartón único) ---------- */
+  .player-gate{
+    max-width:480px;margin:0 auto;padding:16px;min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  }
+  .player-gate-box{
+    background:var(--panel);border:1px solid var(--border);border-radius:20px;
+    padding:28px 22px;width:100%;
+  }
+  .player-gate-spinner{
+    width:44px;height:44px;margin:0 auto 18px;border-radius:50%;
+    border:4px solid var(--border);border-top-color:var(--pink);
+    animation:gateSpin .8s linear infinite;
+  }
+  @keyframes gateSpin{to{transform:rotate(360deg);}}
+  .player-gate-box p{color:var(--text-dim);line-height:1.5;}
+  .player-gate-box.error .player-gate-spinner{display:none;}
+  .player-gate-box.error p{color:var(--yellow);font-weight:600;}
+
   /* ---------- Winner overlay ---------- */
   .overlay{
     position:fixed;inset:0;background:rgba(5,2,12,.92);z-index:300;
@@ -768,6 +787,16 @@
     </div>
   </div>
 
+  <!-- ============ PLAYER GATE (verificación de cartón único) ============ -->
+  <div id="playerGate" hidden class="player-gate">
+    <img src="logo-francachela.png" alt="Francachela by Mr. Pizza" class="player-logo">
+    <div class="player-gate-box" id="gateBox">
+      <div class="player-gate-spinner" id="gateSpinner"></div>
+      <p id="gateMsg">Verificando tu cartón…</p>
+      <button class="neon-btn block" id="btnGateRetry" hidden>Intentar de nuevo</button>
+    </div>
+  </div>
+
   <!-- ============ PLAYER VIEW ============ -->
   <div id="playerView" hidden>
     <div class="player-head">
@@ -835,6 +864,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
 <script>
 (function(){
   "use strict";
@@ -1751,6 +1782,94 @@
     return params;
   }
 
+  /* ------------------------------------------------------
+     Reclamo de cartón único vía Firestore.
+     Cada cartón (seed+id) solo se puede "crear" una vez —
+     las reglas de seguridad de Firestore prohíben sobreescribir
+     o borrar esa marca, así que quien llega primero se queda
+     con el cartón, sin importar cuántos celulares distintos
+     escaneen el mismo QR después.
+  ------------------------------------------------------ */
+  const firebaseConfig = {
+    apiKey: "AIzaSyDOnRym2o_LweTomJXvA07VyM0nBxnIF3A",
+    authDomain: "francachela-asistencia.firebaseapp.com",
+    projectId: "francachela-asistencia",
+    storageBucket: "francachela-asistencia.firebasestorage.app",
+    messagingSenderId: "324536774372",
+    appId: "1:324536774372:web:4d2ff2fbfa6357b8f106f1"
+  };
+  let firestoreDb = null;
+  try{
+    if(typeof firebase !== 'undefined'){
+      firebase.initializeApp(firebaseConfig);
+      firestoreDb = firebase.firestore();
+    }
+  }catch(e){ firestoreDb = null; }
+
+  function claimedLocallyKey(seed, id){ return 'bingoFrancachela_claimed_' + seed + '_' + id; }
+
+  // Devuelve una promesa que resuelve a 'claimed' (tuyo, ya sea nuevo o de una
+  // visita anterior en este mismo celular), 'taken' (otro celular lo tomó
+  // primero) o 'error' (no se pudo verificar, ej. sin conexión).
+  function claimCard(seed, id){
+    try{
+      if(localStorage.getItem(claimedLocallyKey(seed, id)) === '1'){
+        return Promise.resolve('claimed');
+      }
+    }catch(e){/* sin almacenamiento local disponible */}
+
+    if(!firestoreDb) return Promise.resolve('error');
+
+    const ref = firestoreDb.collection('bingo_cartones').doc(String(seed))
+      .collection('cartones').doc(String(id));
+    const timeout = new Promise((_, reject)=>setTimeout(()=>reject(new Error('timeout')), 8000));
+
+    return Promise.race([
+      firestoreDb.runTransaction(tx=>{
+        return tx.get(ref).then(doc=>{
+          if(doc.exists) throw new Error('taken');
+          tx.set(ref, { claimedAt: firebase.firestore.FieldValue.serverTimestamp() });
+        });
+      }),
+      timeout
+    ]).then(()=>{
+      try{ localStorage.setItem(claimedLocallyKey(seed, id), '1'); }catch(e){}
+      return 'claimed';
+    }).catch(err=>{
+      if(err && err.message === 'taken') return 'taken';
+      return 'error';
+    });
+  }
+
+  function gateAndInitPlayer(playId, playSeed){
+    const gate = document.getElementById('playerGate');
+    const gateBox = document.getElementById('gateBox');
+    const gateMsg = document.getElementById('gateMsg');
+    const gateRetry = document.getElementById('btnGateRetry');
+    gate.hidden = false;
+    gateBox.classList.remove('error');
+    gateMsg.textContent = 'Verificando tu cartón…';
+    gateRetry.hidden = true;
+
+    claimCard(playSeed, playId).then(result=>{
+      if(result === 'claimed'){
+        gate.hidden = true;
+        initPlayer(playId, playSeed);
+      }else if(result === 'taken'){
+        gateBox.classList.add('error');
+        gateMsg.textContent = 'Este cartón ya fue reclamado por otro jugador. Pide al organizador un cartón nuevo.';
+      }else{
+        gateBox.classList.add('error');
+        gateMsg.textContent = 'No se pudo verificar tu cartón (revisa tu conexión).';
+        gateRetry.hidden = false;
+      }
+    });
+  }
+  document.getElementById('btnGateRetry').addEventListener('click', ()=>{
+    const params = parseHash();
+    gateAndInitPlayer(params.get('play'), params.get('seed'));
+  });
+
   function initPlayer(playId, playSeed){
     document.getElementById('playerView').hidden = false;
     document.getElementById('pCardId').textContent = playId;
@@ -1825,7 +1944,7 @@
     const playId = params.get('play');
     const playSeed = params.get('seed');
     if(playId && playSeed){
-      initPlayer(playId, playSeed);
+      gateAndInitPlayer(playId, playSeed);
     }else{
       initHost();
     }
