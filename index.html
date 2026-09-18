@@ -988,15 +988,11 @@
   /* ======================================================
      VOZ (Web Speech API)
   ====================================================== */
-  // El "alfabeto deletreado" (be de burro / ge de gato) tampoco resolvió el
-  // acento inglés: se confirmó que SOLO la letra suelta ("be"/"ge") suena
-  // mal — "de burro"/"de gato" y el número sí se oyen en español correcto.
-  // Es decir, el motor reconoce el texto exacto "be"/"ge" como una sigla u
-  // abreviatura conocida (en inglés) sin importar lo que venga después en
-  // el mismo mensaje. La tilde fuerza una grafía que esa coincidencia por
-  // diccionario no reconoce, obligando al motor a usar sus reglas
-  // fonéticas normales en español en vez de la entrada de diccionario.
-  const LETTER_SPEECH_NAMES = {B:'bé, de burro', I:'i, de iguana', N:'ene, de nido', G:'gé, de gato', O:'o, de oso'};
+  // "be"/"ge" sueltas se leían en inglés porque el motor las reconocía como
+  // sigla/abreviatura conocida. La tilde (bé/gé) usa una grafía que esa
+  // coincidencia de diccionario no reconoce, forzando las reglas fonéticas
+  // normales en español — confirmado que ya suena bien.
+  const LETTER_SPEECH_NAMES = {B:'bé', I:'i', N:'ene', G:'gé', O:'o'};
 
   let spanishVoice = null;
   let voiceRate = 0.85;
