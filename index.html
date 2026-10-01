@@ -676,6 +676,7 @@
           <button class="neon-btn purple" id="btnQr">📱 Generar QR para Jugadores</button>
           <button class="neon-btn cyan" id="btnPrint">🖨️ Imprimir Cartones</button>
           <button class="neon-btn" id="btnResetBalls">🔁 Reiniciar Balotas</button>
+          <button class="neon-btn green" id="btnNewRound">🆕 Nueva Ronda (mismo cartón)</button>
           <button class="neon-btn pink" id="btnNewGame">✨ Nuevo Juego</button>
         </div>
       </div>
@@ -1506,6 +1507,22 @@
     saveState();
     refreshHistoryAndCount();
     refreshBoard();
+  });
+
+  // "Nueva Ronda" reinicia las balotas igual que "Reiniciar Balotas", pero
+  // además avanza el contador de ronda — pensado para jugar varias rondas
+  // (línea, cruz, lleno, etc.) seguidas con el MISMO cartón, sin tocar la
+  // semilla. A diferencia de "Nuevo Juego", los QR/impresos ya entregados
+  // NO se invalidan: el cartón de cada jugador sigue siendo el mismo.
+  document.getElementById('btnNewRound').addEventListener('click', ()=>{
+    if(!confirm('¿Iniciar una nueva ronda con el MISMO cartón?\n\nSe reinician las balotas y puedes elegir otro patrón de victoria (línea, cruz, 4 esquinas, lleno, etc). Los cartones QR/impresos siguen siendo válidos, no hay que repartir nada nuevo.\n\nRecuerda avisar a los jugadores que toquen "Limpiar mis marcas" en su celular antes de empezar.')) return;
+    state.drawn = [];
+    state.gameNum = (state.gameNum || 1) + 1;
+    saveState();
+    updateSeedLabel();
+    refreshHistoryAndCount();
+    refreshBoard();
+    document.getElementById('tvGameNum').textContent = state.gameNum;
   });
 
   document.getElementById('btnNewGame').addEventListener('click', ()=>{
