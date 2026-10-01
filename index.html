@@ -479,6 +479,12 @@
   .player-logo{max-width:220px;width:60%;height:auto;margin-bottom:8px;filter:drop-shadow(0 0 10px rgba(255,255,255,.2));}
   .player-head h1{font-size:1.5rem;background:linear-gradient(90deg,var(--pink),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;}
   .player-name{font-family:'Baloo 2';font-weight:800;font-size:1.3rem;color:var(--yellow);margin-top:6px;}
+  .player-pattern-box{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--border);border-radius:16px;
+    padding:14px;text-align:center;width:100%;box-sizing:border-box;margin-bottom:14px;
+  }
+  .player-pattern-title{font-size:.8rem;color:var(--text-dim);margin-bottom:8px;letter-spacing:.5px;}
   .player-id-badge{
     display:inline-block;margin-top:8px;padding:8px 18px;border-radius:999px;
     background:var(--panel-2);border:1px solid var(--yellow);color:var(--yellow);
@@ -817,6 +823,11 @@
       <div class="player-name" id="pNameLabel" hidden></div>
       <div class="player-id-badge">CARTÓN #<span id="pCardId">--</span></div>
       <div class="player-seed" id="pSeedLabel">SEMILLA: ---</div>
+    </div>
+    <div class="player-pattern-box" id="playerPatternBox" hidden>
+      <div class="player-pattern-title">🎯 Patrón a completar</div>
+      <div class="tv-pattern-grid" id="pPatternGrid"></div>
+      <div class="tv-pattern-label" id="pPatternLabel">Cartón Lleno</div>
     </div>
     <div class="player-card" id="playerCard"></div>
     <div class="player-actions">
@@ -1301,18 +1312,26 @@
     if(sub === 'diagonal') return 'Línea Diagonal (cualquiera)';
     return 'Línea (cualquiera)';
   }
-  function renderPatternPreview(modeId){
+  // gridEl/labelEl son opcionales: sin ellos dibuja en el panel TV de
+  // siempre y además publica el patrón a Firestore para los jugadores;
+  // pasándolos (ej. desde el cartón del jugador) solo dibuja ahí, sin
+  // volver a publicar nada.
+  function renderPatternPreview(modeId, gridEl, labelEl){
+    const isHostCall = !gridEl;
+    gridEl = gridEl || tvPatternGridEl;
+    labelEl = labelEl || tvPatternLabelEl;
     const mode = modeById(modeId);
     const on = canonicalPatternCells(modeId);
-    tvPatternGridEl.innerHTML = '';
+    gridEl.innerHTML = '';
     for(let r=0;r<5;r++){
       for(let c=0;c<5;c++){
         const cell = document.createElement('div');
         cell.className = 'tv-pattern-cell' + (on.has(r+'-'+c) ? ' on' : '');
-        tvPatternGridEl.appendChild(cell);
+        gridEl.appendChild(cell);
       }
     }
-    tvPatternLabelEl.textContent = modeId === 'linea' ? lineaSubLabel(state.lineaSubMode || 'any') : mode.name;
+    labelEl.textContent = modeId === 'linea' ? lineaSubLabel(state.lineaSubMode || 'any') : mode.name;
+    if(isHostCall) publishRoundState();
   }
 
   /* ======================================================
@@ -1539,6 +1558,7 @@
     refreshHistoryAndCount();
     refreshBoard();
     document.getElementById('tvGameNum').textContent = state.gameNum;
+    publishRoundState();
   });
 
   document.getElementById('btnNewGame').addEventListener('click', ()=>{
@@ -1551,6 +1571,7 @@
     refreshHistoryAndCount();
     refreshBoard();
     document.getElementById('tvGameNum').textContent = state.gameNum;
+    publishRoundState();
   });
 
   function updateSeedLabel(){
@@ -1903,6 +1924,20 @@
     }
   }catch(e){ firestoreDb = null; }
 
+  // Publica el patrón de victoria activo (y el número de ronda) para que
+  // el celular de cada jugador pueda mostrarlo en su propio cartón, en
+  // tiempo real — sin esto, el teléfono del jugador no tiene forma de
+  // saber qué está eligiendo el organizador en su panel.
+  function publishRoundState(){
+    if(!firestoreDb || !state.seed) return;
+    firestoreDb.collection('bingo_cartones').doc(String(state.seed)).set({
+      mode: state.mode,
+      lineaSubMode: state.lineaSubMode || 'any',
+      gameNum: state.gameNum || 1,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(()=>{});
+  }
+
   function claimedLocallyKey(seed, id){ return 'bingoFrancachela_claimed_' + seed + '_' + id; }
 
   // Devuelve una promesa que resuelve a 'claimed' (tuyo, ya sea nuevo o de una
@@ -1975,6 +2010,26 @@
     if(playName){
       nameLabel.textContent = playName;
       nameLabel.hidden = false;
+    }
+
+    // Patrón de victoria en vivo: lo escucha de Firestore (lo publica el
+    // panel del organizador cada vez que cambia de modo/línea) para que el
+    // jugador sepa qué está jugando sin tener que preguntar. Si no hay
+    // conexión, el bloque simplemente se queda oculto — el cartón sigue
+    // siendo usable igual.
+    if(firestoreDb){
+      const pPatternBox = document.getElementById('playerPatternBox');
+      const pPatternGridEl = document.getElementById('pPatternGrid');
+      const pPatternLabelEl = document.getElementById('pPatternLabel');
+      firestoreDb.collection('bingo_cartones').doc(String(playSeed))
+        .onSnapshot(doc=>{
+          if(!doc.exists) return;
+          const data = doc.data();
+          state.mode = data.mode || 'lleno';
+          state.lineaSubMode = data.lineaSubMode || 'any';
+          renderPatternPreview(state.mode, pPatternGridEl, pPatternLabelEl);
+          pPatternBox.hidden = false;
+        }, ()=>{ pPatternBox.hidden = true; });
     }
 
     const grid = generateCard(playSeed, playId);
