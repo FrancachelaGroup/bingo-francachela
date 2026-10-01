@@ -1839,12 +1839,35 @@
     if(document.getElementById('hostView').hidden) return;
     const fresh = loadState();
     if(!fresh) return;
+    const freshDrawn = fresh.drawn || [];
+    // Si llegó una balota nueva desde la otra ventana, la detectamos ANTES
+    // de pisar state.drawn, para saber si hay que revelarla aquí.
+    const newBall = (freshDrawn.length > (state.drawn || []).length)
+      ? freshDrawn[freshDrawn.length - 1]
+      : null;
+
     state.seed = fresh.seed;
-    state.drawn = fresh.drawn || [];
+    state.drawn = freshDrawn;
     state.mode = fresh.mode || 'lleno';
     state.gameNum = fresh.gameNum || 1;
     state.lineaSubMode = fresh.lineaSubMode || 'any';
     syncUiFromState();
+
+    // La ventana de Modo TV no recibe las balotas que saca la ventana de
+    // control más que como datos — aquí es donde le toca mostrar (y
+    // anunciar) la revelación a pantalla completa, igual que si la hubiera
+    // extraído ella misma.
+    const isTvWindow = document.getElementById('hostView').classList.contains('tv-mode');
+    if(newBall !== null && isTvWindow && !drawing){
+      drawing = true;
+      btnDraw.disabled = true;
+      btnTvDraw.disabled = true;
+      revealBallFullscreen(newBall, ()=>{
+        drawing = false;
+        btnDraw.disabled = false;
+        btnTvDraw.disabled = false;
+      });
+    }
   });
 
   /* ======================================================
