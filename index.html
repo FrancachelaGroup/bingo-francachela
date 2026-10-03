@@ -2260,6 +2260,7 @@
     nameInput.focus();
 
     function doJoin(){
+      if(btn.disabled) return;
       const name = nameInput.value.trim();
       if(!name){ nameInput.focus(); return; }
       btn.disabled = true;
@@ -2271,6 +2272,14 @@
           joinMsg.hidden = false;
           return;
         }
+        // Cambia el link de la pestaña de "unirse" a uno de cartón normal
+        // (#play=...) SIN disparar el listener de hashchange (que recarga
+        // la página) — así, si el jugador refresca después de haber
+        // entrado, cae en el camino normal (reconoce su cartón al toque)
+        // en vez de volver a pedirle el nombre.
+        try{
+          history.replaceState(null, '', '#play=' + id + '&seed=' + encodeURIComponent(joinSeed) + '&name=' + encodeURIComponent(name));
+        }catch(e){}
         document.getElementById('joinView').hidden = true;
         initPlayer(id, joinSeed, name);
       });
