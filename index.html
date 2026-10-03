@@ -466,11 +466,20 @@
   .qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;}
   .qr-card{
     background:#fff;border-radius:12px;padding:10px;text-align:center;color:#111;
+    position:relative;transition:opacity .2s ease;
   }
   .qr-card .qname{font-family:'Baloo 2';font-weight:800;font-size:1.1rem;margin-top:8px;color:#20142e;word-break:break-word;}
   .qr-card .qid{font-family:'Baloo 2';font-weight:800;font-size:1rem;margin-top:4px;color:#666;}
   .qr-card .qname + .qid{font-size:.8rem;font-weight:600;}
   .qr-card .qurl{font-size:.55rem;word-break:break-all;color:#666;margin-top:4px;}
+  .qr-card .qtaken{
+    display:none;position:absolute;inset:0;border-radius:12px;
+    background:rgba(10,6,20,.82);color:#22ff9c;
+    font-family:'Baloo 2';font-weight:800;font-size:.9rem;
+    align-items:center;justify-content:center;text-align:center;padding:10px;
+  }
+  .qr-card.taken{opacity:.55;}
+  .qr-card.taken .qtaken{display:flex;}
   .qr-card canvas, .qr-card img, .qr-card svg{margin:0 auto;display:block;max-width:100%;height:auto;}
 
   /* ---------- Player view ---------- */
@@ -1684,7 +1693,12 @@
     }catch(e){ return ''; }
   }
 
+  // Suscripción activa a qué cartones ya se reclamaron, para no acumular
+  // listeners duplicados cada vez que se regenera la cuadrícula.
+  let qrClaimsUnsub = null;
+
   function generateQrGrid(){
+    if(qrClaimsUnsub){ qrClaimsUnsub(); qrClaimsUnsub = null; }
     const grid = document.getElementById('qrGrid');
     grid.innerHTML = '';
     const names = qrNamesEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -1701,8 +1715,13 @@
         + (name ? '&name=' + encodeURIComponent(name) : '');
       const card = document.createElement('div');
       card.className = 'qr-card';
+      card.dataset.cardId = String(id);
       const qrHolder = document.createElement('div');
       card.appendChild(qrHolder);
+      const takenBadge = document.createElement('div');
+      takenBadge.className = 'qtaken';
+      takenBadge.textContent = '✅ YA RECLAMADO';
+      card.appendChild(takenBadge);
       if(name){
         const nameLabel = document.createElement('div');
         nameLabel.className = 'qname';
@@ -1731,6 +1750,20 @@
       }else{
         qrHolder.innerHTML = '<div style="padding:20px;font-size:.7rem;color:#900;">Librería QR no disponible.<br>Comparte el enlace manualmente.</div>';
       }
+    }
+
+    // En vivo: a medida que los jugadores van reclamando sus cartones,
+    // el QR correspondiente se apaga y marca "YA RECLAMADO" aquí mismo,
+    // para que nadie intente escanear uno que ya tiene dueño.
+    if(firestoreDb){
+      qrClaimsUnsub = firestoreDb.collection('bingo_cartones').doc(String(state.seed))
+        .collection('cartones')
+        .onSnapshot(snap=>{
+          const claimedIds = new Set(snap.docs.map(d=>d.id));
+          grid.querySelectorAll('.qr-card').forEach(card=>{
+            card.classList.toggle('taken', claimedIds.has(card.dataset.cardId));
+          });
+        }, ()=>{});
     }
   }
   document.getElementById('btnGenQr').addEventListener('click', generateQrGrid);
@@ -1900,6 +1933,15 @@
     return params;
   }
 
+  let wakeLock = null;
+  async function keepScreenAwake(){
+    try{
+      if('wakeLock' in navigator){
+        wakeLock = await navigator.wakeLock.request('screen');
+      }
+    }catch(e){ /* el navegador lo bloqueó (ej. batería baja) o no lo soporta; no es crítico */ }
+  }
+
   /* ------------------------------------------------------
      Reclamo de cartón único vía Firestore.
      Cada cartón (seed+id) solo se puede "crear" una vez —
@@ -2012,6 +2054,22 @@
       nameLabel.hidden = false;
     }
 
+    // Para que el celular no apague la pantalla solo mientras el cartón
+    // está abierto (se perdía la partida si se bloqueaba). El sistema
+    // libera el wake lock cuando la pestaña pasa a segundo plano, por
+    // eso se vuelve a pedir cada vez que la pestaña vuelve a estar visible.
+    keepScreenAwake();
+    document.addEventListener('visibilitychange', ()=>{
+      if(document.visibilityState === 'visible') keepScreenAwake();
+    });
+
+    // Recuerda este cartón en el celular para poder volver a entrar a él
+    // (con las marcas ya hechas) si el navegador llega a cerrar la
+    // pestaña — sin tener que volver a escanear el QR.
+    try{
+      localStorage.setItem('bingoFrancachela_myCard', JSON.stringify({ id: playId, seed: playSeed, name: playName || '' }));
+    }catch(e){}
+
     // Patrón de victoria en vivo: lo escucha de Firestore (lo publica el
     // panel del organizador cada vez que cambia de modo/línea) para que el
     // jugador sepa qué está jugando sin tener que preguntar. Si no hay
@@ -2103,9 +2161,23 @@
     const playName = params.get('name');
     if(playId && playSeed){
       gateAndInitPlayer(playId, playSeed, playName);
-    }else{
-      initHost();
+      return;
     }
+    // Si el navegador cerró/perdió la pestaña del cartón y el jugador abre
+    // el link base otra vez (sin el QR a mano), lo regresamos directo a su
+    // cartón — siempre que este celular nunca haya sido usado como panel
+    // de organizador (para no secuestrar la pantalla de control de nadie).
+    let savedCard = null;
+    let hasHostState = false;
+    try{
+      savedCard = JSON.parse(localStorage.getItem('bingoFrancachela_myCard') || 'null');
+      hasHostState = !!localStorage.getItem(STORAGE_KEY);
+    }catch(e){}
+    if(savedCard && savedCard.id && savedCard.seed && !hasHostState){
+      gateAndInitPlayer(savedCard.id, savedCard.seed, savedCard.name);
+      return;
+    }
+    initHost();
   }
   boot();
   window.addEventListener('hashchange', ()=>{ location.reload(); });
