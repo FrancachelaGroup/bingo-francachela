@@ -81,6 +81,8 @@
   .neon-btn.purple:hover{box-shadow:0 0 26px rgba(176,38,255,.55);}
   .neon-btn.green{border-color:var(--green);box-shadow:0 0 16px rgba(34,255,156,.25);}
   .neon-btn.green:hover{box-shadow:0 0 26px rgba(34,255,156,.55);}
+  .neon-btn.yellow{border-color:var(--yellow);box-shadow:0 0 16px rgba(255,230,0,.25);}
+  .neon-btn.yellow:hover{box-shadow:0 0 26px rgba(255,230,0,.55);}
   .neon-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
   .neon-btn.small{padding:6px 12px;font-size:.8rem;}
   .neon-btn.big{padding:16px 26px;font-size:1.15rem;border-radius:16px;}
@@ -457,6 +459,14 @@
   .qr-join-box{justify-content:center;margin-top:14px;}
   .qr-join-box .qr-card{max-width:220px;margin:0 auto;}
   .qr-or-divider{text-align:center;color:var(--text-dim);font-size:.8rem;margin:18px 0;}
+  .pin-wrap{margin-bottom:18px;text-align:center;}
+  .pin-list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .pin-chip{
+    font-family:'Baloo 2';font-weight:800;font-size:1.1rem;padding:8px 14px;border-radius:10px;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+  }
+  .pin-chip.used{opacity:.5;text-decoration:line-through;border-color:var(--green);}
+  .pin-chip .pin-who{display:block;font-family:'Poppins';font-weight:600;font-size:.6rem;text-decoration:none;color:var(--text-dim);margin-top:2px;}
   .qr-names-wrap{margin-bottom:16px;}
   .qr-names-wrap label{display:block;font-size:.85rem;color:var(--text-dim);margin-bottom:6px;line-height:1.4;}
   .qr-names-wrap textarea{
@@ -558,6 +568,7 @@
     font-family:inherit;font-size:1.1rem;text-align:center;
   }
   .join-msg{margin-top:14px;color:var(--yellow);font-weight:600;}
+  .join-pin-input{font-family:'Baloo 2';font-weight:800;font-size:1.4rem;letter-spacing:6px;}
 
   /* ---------- Winner overlay ---------- */
   .overlay{
@@ -829,8 +840,9 @@
   <div id="joinView" hidden class="player-gate">
     <img src="logo-francachela.png" alt="Francachela by Mr. Pizza" class="player-logo">
     <div class="player-gate-box">
-      <p style="margin-bottom:14px;color:var(--text);font-weight:600;">Escribe tu nombre para recibir tu cartón:</p>
+      <p style="margin-bottom:14px;color:var(--text);font-weight:600;">Escribe tu nombre y el PIN que te dieron al pagar:</p>
       <input type="text" id="joinNameInput" class="join-name-input" placeholder="Tu nombre" maxlength="40" autocomplete="off">
+      <input type="text" id="joinPinInput" class="join-name-input join-pin-input" placeholder="PIN" maxlength="4" inputmode="numeric" autocomplete="off" style="margin-top:10px;">
       <button class="neon-btn big pink block" id="btnJoin" style="margin-top:14px;">🎲 ¡Entrar al juego!</button>
       <p id="joinMsg" class="join-msg" hidden></p>
     </div>
@@ -881,6 +893,12 @@
         <div class="qr-grid qr-join-box" id="qrJoinBox"></div>
       </div>
       <div class="qr-or-divider">— o códigos individuales (uno por cartón) —</div>
+      <div class="pin-wrap">
+        <p class="qr-join-hint">PIN de pago (opcional, solo aplica al código único de arriba): genera un PIN por cada cartón que se pague en caja y entrégaselo al cliente junto con el código único. Sin un PIN válido y sin usar, nadie puede recibir cartón.</p>
+        <button class="neon-btn yellow" id="btnGenPin">➕ Generar PIN de cartón</button>
+        <div class="pin-list" id="pinList"></div>
+      </div>
+      <div class="qr-or-divider"></div>
       <div class="qr-names-wrap">
         <label for="qrNames">Nombres (uno por línea, opcional — ideal para juegos de hasta 20 personas: cada quien busca y escanea el QR con su nombre). Déjalo vacío para cartones numerados anónimos.</label>
         <textarea id="qrNames" rows="4" placeholder="Roberto&#10;María&#10;Juan&#10;..."></textarea>
@@ -1690,8 +1708,61 @@
   function baseUrl(){
     return location.origin + location.pathname;
   }
-  document.getElementById('btnQr').addEventListener('click', ()=>{ qrModal.hidden = false; });
-  document.getElementById('btnCloseQr').addEventListener('click', ()=>{ qrModal.hidden = true; });
+  let pinListUnsub = null;
+  function subscribePinList(){
+    if(pinListUnsub){ pinListUnsub(); pinListUnsub = null; }
+    const pinListEl = document.getElementById('pinList');
+    pinListEl.innerHTML = '';
+    if(!firestoreDb) return;
+    pinListUnsub = firestoreDb.collection('bingo_cartones').doc(String(state.seed))
+      .collection('pines').orderBy('createdAt', 'desc')
+      .onSnapshot(snap=>{
+        pinListEl.innerHTML = '';
+        snap.forEach(doc=>{
+          const data = doc.data();
+          const chip = document.createElement('div');
+          chip.className = 'pin-chip' + (data.used ? ' used' : '');
+          chip.textContent = doc.id;
+          if(data.used && data.usedBy){
+            const who = document.createElement('span');
+            who.className = 'pin-who';
+            who.textContent = data.usedBy;
+            chip.appendChild(who);
+          }
+          pinListEl.appendChild(chip);
+        });
+      }, ()=>{});
+  }
+  document.getElementById('btnQr').addEventListener('click', ()=>{
+    qrModal.hidden = false;
+    subscribePinList();
+  });
+  document.getElementById('btnCloseQr').addEventListener('click', ()=>{
+    qrModal.hidden = true;
+    if(pinListUnsub){ pinListUnsub(); pinListUnsub = null; }
+  });
+
+  // Genera un PIN de 4 dígitos no usado todavía para este evento (reintenta
+  // si por rarísima coincidencia ya existe) y lo guarda como "disponible".
+  function generatePaymentPin(){
+    if(!firestoreDb){ alert('Sin conexión a Firestore — no se puede generar el PIN ahora mismo.'); return; }
+    const roundRef = firestoreDb.collection('bingo_cartones').doc(String(state.seed));
+    function attempt(triesLeft){
+      const pin = String(Math.floor(1000 + Math.random() * 9000));
+      const pinRef = roundRef.collection('pines').doc(pin);
+      pinRef.get().then(doc=>{
+        if(doc.exists){
+          if(triesLeft > 0) return attempt(triesLeft - 1);
+          alert('No se pudo generar un PIN único, intenta de nuevo.');
+          return;
+        }
+        pinRef.set({ used: false, createdAt: firebase.firestore.FieldValue.serverTimestamp() })
+          .catch(()=>{ alert('No se pudo guardar el PIN (revisa tu conexión).'); });
+      }).catch(()=>{ alert('No se pudo generar el PIN (revisa tu conexión).'); });
+    }
+    attempt(5);
+  }
+  document.getElementById('btnGenPin').addEventListener('click', generatePaymentPin);
 
   function generateJoinQr(){
     const box = document.getElementById('qrJoinBox');
@@ -2072,45 +2143,60 @@
   }
 
   // Para el QR único: le asigna al jugador el siguiente número de cartón
-  // libre (1, 2, 3...) de forma atómica — el contador y la marca del
-  // cartón se escriben en la MISMA transacción de Firestore, así que dos
-  // personas entrando al mismo tiempo nunca pueden recibir el mismo número.
+  // libre (1, 2, 3...) de forma atómica — el contador, la validación del
+  // PIN de pago y la marca del cartón se escriben en la MISMA transacción
+  // de Firestore, así que dos personas entrando al mismo tiempo nunca
+  // pueden recibir el mismo número ni gastar el mismo PIN dos veces.
   // Si ese nombre YA tenía un cartón asignado (ej. cambió de celular, o
   // volvió a escanear el mismo código en vez de reabrir su cartón), le
-  // devuelve el mismo de siempre en vez de crear uno nuevo — se busca por
-  // un documento aparte indexado por nombre (normalizado), para poder
-  // hacer esa búsqueda dentro de la misma transacción sin una query.
-  // Devuelve el id asignado, o null si no se pudo (ej. sin conexión).
-  function claimNextCard(seed, name){
-    if(!firestoreDb) return Promise.resolve(null);
+  // devuelve el mismo de siempre SIN pedir PIN de nuevo — ya pagó una vez.
+  // Devuelve { ok:true, id } o { ok:false, reason } donde reason es
+  // 'pin-invalid' | 'pin-used' | 'offline' | 'error'.
+  function claimNextCard(seed, name, pin){
+    if(!firestoreDb) return Promise.resolve({ ok:false, reason:'offline' });
     const normName = (name || '').trim().toLowerCase();
+    const normPin = (pin || '').trim();
     const roundRef = firestoreDb.collection('bingo_cartones').doc(String(seed));
     const nameRef = roundRef.collection('porNombre').doc(normName);
+    const pinRef = roundRef.collection('pines').doc(normPin);
     const timeout = new Promise((_, reject)=>setTimeout(()=>reject(new Error('timeout')), 8000));
 
     return Promise.race([
       firestoreDb.runTransaction(tx=>{
         return tx.get(nameRef).then(nameDoc=>{
           if(nameDoc.exists) return nameDoc.data().cardId;
-          return tx.get(roundRef).then(doc=>{
-            const data = doc.exists ? doc.data() : {};
-            const nextId = data.nextCardId || 1;
-            tx.set(roundRef, { nextCardId: nextId + 1 }, { merge: true });
-            const cardRef = roundRef.collection('cartones').doc(String(nextId));
-            tx.set(cardRef, {
-              claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              name: name || ''
+          return tx.get(pinRef).then(pinDoc=>{
+            if(!pinDoc.exists) throw new Error('pin-invalid');
+            if(pinDoc.data().used) throw new Error('pin-used');
+            return tx.get(roundRef).then(doc=>{
+              const data = doc.exists ? doc.data() : {};
+              const nextId = data.nextCardId || 1;
+              tx.set(roundRef, { nextCardId: nextId + 1 }, { merge: true });
+              const cardRef = roundRef.collection('cartones').doc(String(nextId));
+              tx.set(cardRef, {
+                claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                name: name || ''
+              });
+              tx.set(nameRef, { cardId: nextId });
+              tx.update(pinRef, {
+                used: true,
+                usedBy: name || '',
+                usedAt: firebase.firestore.FieldValue.serverTimestamp()
+              });
+              return nextId;
             });
-            tx.set(nameRef, { cardId: nextId });
-            return nextId;
           });
         });
       }),
       timeout
     ]).then(id=>{
       try{ localStorage.setItem(claimedLocallyKey(seed, id), '1'); }catch(e){}
-      return id;
-    }).catch(()=>null);
+      return { ok:true, id };
+    }).catch(err=>{
+      if(err && err.message === 'pin-invalid') return { ok:false, reason:'pin-invalid' };
+      if(err && err.message === 'pin-used') return { ok:false, reason:'pin-used' };
+      return { ok:false, reason:'error' };
+    });
   }
 
   function gateAndInitPlayer(playId, playSeed, playName){
@@ -2252,9 +2338,16 @@
   /* ======================================================
      ARRANQUE
   ====================================================== */
+  const JOIN_ERROR_MESSAGES = {
+    'pin-invalid': 'PIN inválido. Pídele al organizador el PIN que te dieron al pagar.',
+    'pin-used': 'Ese PIN ya fue usado. Pídele al organizador uno nuevo.',
+    'offline': 'No se pudo conectar para asignar tu cartón (revisa tu conexión). Intenta de nuevo.',
+    'error': 'No se pudo asignar tu cartón. Intenta de nuevo.'
+  };
   function initJoinView(joinSeed){
     document.getElementById('joinView').hidden = false;
     const nameInput = document.getElementById('joinNameInput');
+    const pinInput = document.getElementById('joinPinInput');
     const joinMsg = document.getElementById('joinMsg');
     const btn = document.getElementById('btnJoin');
     nameInput.focus();
@@ -2262,16 +2355,19 @@
     function doJoin(){
       if(btn.disabled) return;
       const name = nameInput.value.trim();
+      const pin = pinInput.value.trim();
       if(!name){ nameInput.focus(); return; }
+      if(!pin){ pinInput.focus(); return; }
       btn.disabled = true;
       joinMsg.hidden = true;
-      claimNextCard(joinSeed, name).then(id=>{
-        if(id === null){
+      claimNextCard(joinSeed, name, pin).then(result=>{
+        if(!result.ok){
           btn.disabled = false;
-          joinMsg.textContent = 'No se pudo asignar tu cartón (revisa tu conexión). Intenta de nuevo.';
+          joinMsg.textContent = JOIN_ERROR_MESSAGES[result.reason] || JOIN_ERROR_MESSAGES.error;
           joinMsg.hidden = false;
           return;
         }
+        const id = result.id;
         // Cambia el link de la pestaña de "unirse" a uno de cartón normal
         // (#play=...) SIN disparar el listener de hashchange (que recarga
         // la página) — así, si el jugador refresca después de haber
@@ -2286,6 +2382,7 @@
     }
     btn.addEventListener('click', doJoin);
     nameInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') doJoin(); });
+    pinInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') doJoin(); });
   }
 
   function boot(){
