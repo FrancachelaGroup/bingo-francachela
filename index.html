@@ -452,6 +452,11 @@
     box-shadow:0 0 60px rgba(176,38,255,.35);
   }
   .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .qr-join-wrap{margin-bottom:18px;text-align:center;}
+  .qr-join-hint{font-size:.85rem;color:var(--text-dim);margin-bottom:10px;line-height:1.4;}
+  .qr-join-box{justify-content:center;margin-top:14px;}
+  .qr-join-box .qr-card{max-width:220px;margin:0 auto;}
+  .qr-or-divider{text-align:center;color:var(--text-dim);font-size:.8rem;margin:18px 0;}
   .qr-names-wrap{margin-bottom:16px;}
   .qr-names-wrap label{display:block;font-size:.85rem;color:var(--text-dim);margin-bottom:6px;line-height:1.4;}
   .qr-names-wrap textarea{
@@ -547,6 +552,12 @@
   .player-gate-box p{color:var(--text-dim);line-height:1.5;}
   .player-gate-box.error .player-gate-spinner{display:none;}
   .player-gate-box.error p{color:var(--yellow);font-weight:600;}
+  .join-name-input{
+    width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;
+    border:1px solid var(--border);background:var(--bg-1);color:var(--text);
+    font-family:inherit;font-size:1.1rem;text-align:center;
+  }
+  .join-msg{margin-top:14px;color:var(--yellow);font-weight:600;}
 
   /* ---------- Winner overlay ---------- */
   .overlay{
@@ -814,6 +825,17 @@
     </div>
   </div>
 
+  <!-- ============ JOIN VIEW (un solo QR, cada quien pone su nombre) ============ -->
+  <div id="joinView" hidden class="player-gate">
+    <img src="logo-francachela.png" alt="Francachela by Mr. Pizza" class="player-logo">
+    <div class="player-gate-box">
+      <p style="margin-bottom:14px;color:var(--text);font-weight:600;">Escribe tu nombre para recibir tu cartón:</p>
+      <input type="text" id="joinNameInput" class="join-name-input" placeholder="Tu nombre" maxlength="40" autocomplete="off">
+      <button class="neon-btn big pink block" id="btnJoin" style="margin-top:14px;">🎲 ¡Entrar al juego!</button>
+      <p id="joinMsg" class="join-msg" hidden></p>
+    </div>
+  </div>
+
   <!-- ============ PLAYER GATE (verificación de cartón único) ============ -->
   <div id="playerGate" hidden class="player-gate">
     <img src="logo-francachela.png" alt="Francachela by Mr. Pizza" class="player-logo">
@@ -853,6 +875,12 @@
         <h2 style="color:var(--purple)">📱 Cartones Digitales — Códigos QR</h2>
         <button class="neon-btn small" id="btnCloseQr">✖ Cerrar</button>
       </div>
+      <div class="qr-join-wrap">
+        <p class="qr-join-hint">Opción rápida: un solo código para todos. Cada quien lo escanea, escribe su nombre y recibe su cartón automáticamente (sin que el organizador tenga que escribir nombres ni repartir códigos individuales).</p>
+        <button class="neon-btn green" id="btnGenJoinQr">🔗 Generar código único</button>
+        <div class="qr-grid qr-join-box" id="qrJoinBox"></div>
+      </div>
+      <div class="qr-or-divider">— o códigos individuales (uno por cartón) —</div>
       <div class="qr-names-wrap">
         <label for="qrNames">Nombres (uno por línea, opcional — ideal para juegos de hasta 20 personas: cada quien busca y escanea el QR con su nombre). Déjalo vacío para cartones numerados anónimos.</label>
         <textarea id="qrNames" rows="4" placeholder="Roberto&#10;María&#10;Juan&#10;..."></textarea>
@@ -1665,6 +1693,34 @@
   document.getElementById('btnQr').addEventListener('click', ()=>{ qrModal.hidden = false; });
   document.getElementById('btnCloseQr').addEventListener('click', ()=>{ qrModal.hidden = true; });
 
+  function generateJoinQr(){
+    const box = document.getElementById('qrJoinBox');
+    box.innerHTML = '';
+    const url = baseUrl() + '#join=1&seed=' + encodeURIComponent(state.seed);
+    const card = document.createElement('div');
+    card.className = 'qr-card';
+    const qrHolder = document.createElement('div');
+    card.appendChild(qrHolder);
+    const urlLabel = document.createElement('div');
+    urlLabel.className = 'qurl';
+    urlLabel.textContent = url;
+    card.appendChild(urlLabel);
+    box.appendChild(card);
+    if(typeof qrcode === 'function'){
+      try{
+        const qr = qrcode(0, 'M');
+        qr.addData(url);
+        qr.make();
+        qrHolder.innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4 });
+      }catch(e){
+        qrHolder.innerHTML = '<div style="padding:20px;font-size:.7rem;color:#900;">⚠️ Error generando QR.<br>Comparte el enlace manualmente.</div>';
+      }
+    }else{
+      qrHolder.innerHTML = '<div style="padding:20px;font-size:.7rem;color:#900;">Librería QR no disponible.<br>Comparte el enlace manualmente.</div>';
+    }
+  }
+  document.getElementById('btnGenJoinQr').addEventListener('click', generateJoinQr);
+
   // Los nombres tipiados (y el ID inicial) se recuerdan entre recargas
   // (localStorage aparte del estado del juego) para no perderlos por un
   // refresh accidental a mitad de evento, y para que "Verificar" pueda
@@ -2015,6 +2071,37 @@
     });
   }
 
+  // Para el QR único: le asigna al jugador el siguiente número de cartón
+  // libre (1, 2, 3...) de forma atómica — el contador y la marca del
+  // cartón se escriben en la MISMA transacción de Firestore, así que dos
+  // personas entrando al mismo tiempo nunca pueden recibir el mismo número.
+  // Devuelve el id asignado, o null si no se pudo (ej. sin conexión).
+  function claimNextCard(seed, name){
+    if(!firestoreDb) return Promise.resolve(null);
+    const roundRef = firestoreDb.collection('bingo_cartones').doc(String(seed));
+    const timeout = new Promise((_, reject)=>setTimeout(()=>reject(new Error('timeout')), 8000));
+
+    return Promise.race([
+      firestoreDb.runTransaction(tx=>{
+        return tx.get(roundRef).then(doc=>{
+          const data = doc.exists ? doc.data() : {};
+          const nextId = data.nextCardId || 1;
+          tx.set(roundRef, { nextCardId: nextId + 1 }, { merge: true });
+          const cardRef = roundRef.collection('cartones').doc(String(nextId));
+          tx.set(cardRef, {
+            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            name: name || ''
+          });
+          return nextId;
+        });
+      }),
+      timeout
+    ]).then(nextId=>{
+      try{ localStorage.setItem(claimedLocallyKey(seed, nextId), '1'); }catch(e){}
+      return nextId;
+    }).catch(()=>null);
+  }
+
   function gateAndInitPlayer(playId, playSeed, playName){
     const gate = document.getElementById('playerGate');
     const gateBox = document.getElementById('gateBox');
@@ -2154,6 +2241,33 @@
   /* ======================================================
      ARRANQUE
   ====================================================== */
+  function initJoinView(joinSeed){
+    document.getElementById('joinView').hidden = false;
+    const nameInput = document.getElementById('joinNameInput');
+    const joinMsg = document.getElementById('joinMsg');
+    const btn = document.getElementById('btnJoin');
+    nameInput.focus();
+
+    function doJoin(){
+      const name = nameInput.value.trim();
+      if(!name){ nameInput.focus(); return; }
+      btn.disabled = true;
+      joinMsg.hidden = true;
+      claimNextCard(joinSeed, name).then(id=>{
+        if(id === null){
+          btn.disabled = false;
+          joinMsg.textContent = 'No se pudo asignar tu cartón (revisa tu conexión). Intenta de nuevo.';
+          joinMsg.hidden = false;
+          return;
+        }
+        document.getElementById('joinView').hidden = true;
+        initPlayer(id, joinSeed, name);
+      });
+    }
+    btn.addEventListener('click', doJoin);
+    nameInput.addEventListener('keydown', e=>{ if(e.key === 'Enter') doJoin(); });
+  }
+
   function boot(){
     const params = parseHash();
     const playId = params.get('play');
@@ -2161,6 +2275,12 @@
     const playName = params.get('name');
     if(playId && playSeed){
       gateAndInitPlayer(playId, playSeed, playName);
+      return;
+    }
+    const joinFlag = params.get('join');
+    const joinSeed = params.get('seed');
+    if(joinFlag && joinSeed){
+      initJoinView(joinSeed);
       return;
     }
     // Si el navegador cerró/perdió la pestaña del cartón y el jugador abre
