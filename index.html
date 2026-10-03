@@ -2075,30 +2075,41 @@
   // libre (1, 2, 3...) de forma atómica — el contador y la marca del
   // cartón se escriben en la MISMA transacción de Firestore, así que dos
   // personas entrando al mismo tiempo nunca pueden recibir el mismo número.
+  // Si ese nombre YA tenía un cartón asignado (ej. cambió de celular, o
+  // volvió a escanear el mismo código en vez de reabrir su cartón), le
+  // devuelve el mismo de siempre en vez de crear uno nuevo — se busca por
+  // un documento aparte indexado por nombre (normalizado), para poder
+  // hacer esa búsqueda dentro de la misma transacción sin una query.
   // Devuelve el id asignado, o null si no se pudo (ej. sin conexión).
   function claimNextCard(seed, name){
     if(!firestoreDb) return Promise.resolve(null);
+    const normName = (name || '').trim().toLowerCase();
     const roundRef = firestoreDb.collection('bingo_cartones').doc(String(seed));
+    const nameRef = roundRef.collection('porNombre').doc(normName);
     const timeout = new Promise((_, reject)=>setTimeout(()=>reject(new Error('timeout')), 8000));
 
     return Promise.race([
       firestoreDb.runTransaction(tx=>{
-        return tx.get(roundRef).then(doc=>{
-          const data = doc.exists ? doc.data() : {};
-          const nextId = data.nextCardId || 1;
-          tx.set(roundRef, { nextCardId: nextId + 1 }, { merge: true });
-          const cardRef = roundRef.collection('cartones').doc(String(nextId));
-          tx.set(cardRef, {
-            claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            name: name || ''
+        return tx.get(nameRef).then(nameDoc=>{
+          if(nameDoc.exists) return nameDoc.data().cardId;
+          return tx.get(roundRef).then(doc=>{
+            const data = doc.exists ? doc.data() : {};
+            const nextId = data.nextCardId || 1;
+            tx.set(roundRef, { nextCardId: nextId + 1 }, { merge: true });
+            const cardRef = roundRef.collection('cartones').doc(String(nextId));
+            tx.set(cardRef, {
+              claimedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              name: name || ''
+            });
+            tx.set(nameRef, { cardId: nextId });
+            return nextId;
           });
-          return nextId;
         });
       }),
       timeout
-    ]).then(nextId=>{
-      try{ localStorage.setItem(claimedLocallyKey(seed, nextId), '1'); }catch(e){}
-      return nextId;
+    ]).then(id=>{
+      try{ localStorage.setItem(claimedLocallyKey(seed, id), '1'); }catch(e){}
+      return id;
     }).catch(()=>null);
   }
 
